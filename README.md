@@ -41,8 +41,7 @@ This project features a **⚛️ React frontend** styled with **🎨 Tailwind CS
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/ivin-austan/millow.git
-   cd millow
+   git clone https://github.com/ivin-galfar/galfar-intranet-backend.git
    ```
    
 2. Install Dependencies:
