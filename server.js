@@ -14,8 +14,8 @@ const app = express();
 app.use(express.json());
 
 const allowedOrigins = [
+  "https://orange-meadow-02ae73903.1.azurestaticapps.net/",
   "http://localhost:5173",
-  "https://galfar-scm.onrender.com",
 ];
 
 const corsOptions = {
