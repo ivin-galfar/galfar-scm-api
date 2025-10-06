@@ -5,12 +5,15 @@ import {
   feedReceipt,
   fetchoneReceiptFormData,
   fetchoneReceiptTableData,
-  getAllApproverDetails,
   getApproverDetailsByCSId,
   removeStatement,
   updatereceipt,
   updateReceiptStatus,
 } from "../Models/receiptmodel.js";
+import {
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+} from "@azure/storage-blob";
 
 export const feedReceipts = async (req, res) => {
   try {
@@ -56,7 +59,9 @@ export const feedReceipts = async (req, res) => {
       .status(201)
       .json({ message: "Receipt saved successfully", receipt: newReceipt });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    console.log(error);
+
+    res.status(500).json({ error: error });
   }
 };
 
@@ -252,5 +257,47 @@ export const fetchApproverDetails = async (req, res) => {
     return res.status(200).json({ approverDetails: details });
   } catch (error) {
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const uploadFile = async (req, res) => {
+  const account = process.env.STORAGE_ACCOUNT_NAME;
+  const containerName = process.env.STORAGE_CONTAINER_NAME;
+  const accountKey = process.env.STORAGE_ACCOUNT_KEY;
+
+  try {
+    const files = req.files;
+
+    if (!files || files.length == 0)
+      return res.status(400).json({ message: "No file Uploaded" });
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      account,
+      accountKey
+    );
+
+    const blobServiceClient = new BlobServiceClient(
+      `https://${account}.blob.core.windows.net`,
+      sharedKeyCredential
+    );
+    const uploadedFiles = [];
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    for (let file of files) {
+      const blobName = file.originalname;
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      const uploadBlobResponse = await blockBlobClient.uploadData(file.buffer, {
+        blobHTTPHeaders: { blobContentType: file.mimetype },
+      });
+      uploadedFiles.push({
+        fileName: blobName,
+        fileUrl: blockBlobClient.url,
+        response: uploadBlobResponse,
+      });
+    }
+
+    res.status(200).json({
+      uploadedFiles,
+    });
+  } catch (error) {
+    res.send(error);
   }
 };
