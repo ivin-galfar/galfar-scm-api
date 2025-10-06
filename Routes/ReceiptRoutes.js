@@ -8,7 +8,14 @@ import {
   updateApprovalstatus,
   updateReceipt,
   updatestatus,
+  uploadFile,
 } from "../Controllers/receiptController.js";
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+
+const upload = multer({ storage });
+
 const router = express.Router();
 router.route("/").post(feedReceipts);
 router.route("/").get(fetchReceipts);
@@ -18,5 +25,6 @@ router.route("/updatereceipt/:cs_id").put(updateReceipt);
 router.route("/updatereceiptstatus/:cs_id").put(updatestatus);
 router.route("/approverdetails/:cs_id").get(fetchApproverDetails);
 router.route("/approver/:cs_id").put(updateApprovalstatus);
+router.route("/file").post(upload.array("file"), uploadFile);
 
 export default router;
