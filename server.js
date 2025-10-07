@@ -14,7 +14,7 @@ const app = express();
 app.use(express.json());
 
 const allowedOrigins = [
-  "https://orange-meadow-02ae73903.1.azurestaticapps.net",
+  "https://intranet.galfaremirates.com",
   "http://localhost:5173",
 ];
 
