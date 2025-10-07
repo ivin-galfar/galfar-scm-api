@@ -1,6 +1,7 @@
 import {
   deleteParticular,
   existingparticulars,
+  existingParticularsByName,
   feedParticular,
   fetchAllParticulars,
   fetchParticularTemplate,
@@ -9,7 +10,7 @@ import {
 export const feedParticulars = async (req, res) => {
   const { created, template } = req.body;
   try {
-    const templateexists = await existingparticulars(template.name);
+    const templateexists = await existingParticularsByName(template.name);
     if (templateexists.length > 0) {
       return res
         .status(401)
@@ -44,9 +45,9 @@ export const fetchParticulars = async (req, res) => {
 };
 
 export const fetchParticularTemplates = async (req, res) => {
-  const { name } = req.params;
+  const { id } = req.params;
   try {
-    const particular = await fetchParticularTemplate(name);
+    const particular = await fetchParticularTemplate(id);
     return res.json({ particular });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -54,15 +55,15 @@ export const fetchParticularTemplates = async (req, res) => {
 };
 
 export const deleteparticular = async (req, res) => {
-  const { name } = req.params;
+  const { id } = req.params;
 
-  const templateexists = await existingparticulars(name);
+  const templateexists = await existingparticulars(id);
 
   if (templateexists.length == 0) {
     return res.status(404).json(" Particular not exists!!");
   }
   try {
-    await deleteParticular(name);
+    await deleteParticular(id);
     return res.status(200).json({ message: "Particular deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
