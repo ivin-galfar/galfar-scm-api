@@ -232,11 +232,6 @@ export const updateReceipt = async (req, res) => {
 
 export const removeReceipt = async (req, res) => {
   const { cs_id } = req.params;
-  const { formData } = await fetchoneReceiptFormData(cs_id);
-
-  if (formData.length == 0) {
-    return res.status(404).json({ error: "Statement not found" });
-  }
   try {
     const deletedstatement = await removeStatement(cs_id);
     return res.status(200).json(deletedstatement);
