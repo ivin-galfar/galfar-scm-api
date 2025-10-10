@@ -70,7 +70,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
 
 export const allReceipts = async () => {
   try {
-    const { rows } = await pool.query("SELECT * FROM receipts");
+    const { rows } = await pool.query("SELECT * FROM receipts where deleted=0");
     return rows;
   } catch (error) {
     console.error("Error fetching receipts:", error);
@@ -80,7 +80,9 @@ export const allReceipts = async () => {
 
 export const allTableData = async () => {
   try {
-    const { rows } = await pool.query("SELECT * FROM tableData");
+    const { rows } = await pool.query(
+      "SELECT * FROM tableData where deleted=0"
+    );
     return rows;
   } catch (error) {
     console.error("Error fetching receipts:", error);
@@ -90,9 +92,10 @@ export const allTableData = async () => {
 
 export const fetchoneReceiptFormData = async (cs_id) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM receipts where id = $1", [
-      cs_id,
-    ]);
+    const { rows } = await pool.query(
+      "SELECT * FROM receipts where id = $1 and deleted=0",
+      [cs_id]
+    );
     return { formData: rows[0] };
   } catch (error) {
     throw error;
@@ -102,7 +105,7 @@ export const fetchoneReceiptFormData = async (cs_id) => {
 export const fetchoneReceiptTableData = async (cs_id) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM tabledata where receipt_id = $1",
+      "SELECT * FROM tabledata where receipt_id = $1 and  deleted=0",
       [cs_id]
     );
     return { tableData: rows };
@@ -242,6 +245,21 @@ export const removeStatement = async (cs_id) => {
     await pool.query("DELETE FROM tabledata WHERE receipt_id = $1", [cs_id]);
 
     await pool.query("DELETE FROM receipts WHERE id = $1", [cs_id]);
+
+    return { message: "Statement removed successfully" };
+  } catch (error) {
+    console.error("Error removing statement:", error);
+    throw error;
+  }
+};
+
+export const updateDeleteFlag = async (cs_id) => {
+  try {
+    await pool.query("Update tabledata set deleted = 1 WHERE receipt_id = $1", [
+      cs_id,
+    ]);
+
+    await pool.query("Update receipts set deleted = 1 WHERE id = $1", [cs_id]);
 
     return { message: "Statement removed successfully" };
   } catch (error) {

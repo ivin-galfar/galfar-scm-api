@@ -7,6 +7,7 @@ import {
   fetchoneReceiptTableData,
   getApproverDetailsByCSId,
   removeStatement,
+  updateDeleteFlag,
   updatereceipt,
   updateReceiptStatus,
 } from "../Models/receiptmodel.js";
@@ -239,7 +240,24 @@ export const removeReceipt = async (req, res) => {
   try {
     const deletedstatement = await removeStatement(cs_id);
     return res.status(200).json(deletedstatement);
-  } catch (error) {}
+  } catch (error) {
+    return res.status(500).json(error);
+  }
+};
+
+export const softdeleteReceipt = async (req, res) => {
+  const { cs_id } = req.params;
+  const { formData } = await fetchoneReceiptFormData(cs_id);
+
+  if (formData.length == 0) {
+    return res.status(404).json({ error: "Statement not found" });
+  }
+  try {
+    const deletedstatement = await updateDeleteFlag(cs_id);
+    return res.status(200).json(deletedstatement);
+  } catch (error) {
+    return res.status(500).json(error);
+  }
 };
 
 export const fetchApproverDetails = async (req, res) => {
