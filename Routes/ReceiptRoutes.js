@@ -10,7 +10,6 @@ import {
   updateReceipt,
   updatestatus,
   uploadFile,
-  uploadlist,
 } from "../Controllers/receiptController.js";
 import multer from "multer";
 
