@@ -19,7 +19,6 @@ const upload = multer({ storage });
 
 const router = express.Router();
 router.route("/file").post(upload.array("file"), uploadFile);
-// router.route("/sharepoint/list").post(upload.array("file"), uploadlist);
 
 router.route("/updatereceipt/:cs_id").put(updateReceipt);
 router.route("/updatereceiptstatus/:cs_id").put(updatestatus);

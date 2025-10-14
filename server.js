@@ -5,7 +5,7 @@ import cors from "cors";
 import userRoutes from "./Routes/userRoutes.js";
 import ParticularRoutes from "./Routes/ParticularRoutes.js";
 import ReceiptRoutes from "./Routes/ReceiptRoutes.js";
-
+import verifyToken from "./Utils/jwtTokenValidation.js";
 dotenv.config();
 const port = process.env.PORT;
 
@@ -33,8 +33,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use("/users", userRoutes);
-app.use("/receipts", ReceiptRoutes);
-app.use("/particulars", ParticularRoutes);
+app.use("/receipts", verifyToken, ReceiptRoutes);
+app.use("/particulars", verifyToken, ParticularRoutes);
 
 app.get("/", (req, res) => res.send("API is running"));
 

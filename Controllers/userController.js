@@ -1,6 +1,6 @@
 import { addUser, existing } from "../Models/userModel.js";
 import bcrypt from "bcryptjs";
-
+import generateToken from "../Utils/generateToken.js";
 export const createUser = async (req, res) => {
   const { email, password, isAdmin, role } = req.body;
 
@@ -31,7 +31,11 @@ export const authUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json("Invalid Credentials!");
     }
-    res.json(user);
+    const token = generateToken(user.id);
+    res.json({
+      ...user,
+      token,
+    });
   } catch (er) {
     res.status(500).json({ error: er.message });
   }

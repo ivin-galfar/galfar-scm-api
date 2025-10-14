@@ -13,6 +13,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
     type,
     currency,
     file,
+    filename,
     qty,
   } = formData;
   const recommendationRow = tableData.find(
@@ -28,7 +29,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
   }
 
   const { rows } = await pool.query(
-    "INSERT INTO receipts (hiringname,datevalue,projectvalue,locationvalue,equipmrnovalue,emrefnovalue,requireddatevalue,requirementdurationvalue,type,currency,file,qty,selectedvendorreason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *",
+    "INSERT INTO receipts (hiringname,datevalue,projectvalue,locationvalue,equipmrnovalue,emrefnovalue,requireddatevalue,requirementdurationvalue,type,currency,file,filename,qty,selectedvendorreason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",
     [
       hiringName,
       datevalue,
@@ -41,6 +42,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
       type,
       currency,
       file,
+      filename,
       qty,
       selectedRecommendation,
     ]
@@ -182,6 +184,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
       selectedvendorindex,
       selectedvendorreason,
       qty,
+      file,
+      filename,
     } = updatedFormData;
 
     for (const item of updatedFormData.tableData ?? null) {
@@ -213,6 +217,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
          selectedvendorindex = $10,
          selectedvendorreason = $11,
          qty = $13,
+         file =$14,
+         filename = $15,
          receiptupdated = now()
        WHERE id = $12
        RETURNING *`,
@@ -230,6 +236,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
         selectedvendorreason,
         cs_id,
         qty,
+        file,
+        filename,
       ]
     );
 
