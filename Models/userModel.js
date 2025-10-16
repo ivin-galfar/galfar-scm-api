@@ -17,3 +17,12 @@ export const existing = async (email) => {
 
   return existing.rows;
 };
+export const getEmailsByRole = async (role) => {
+  if (!role || typeof role !== "string") {
+    throw new Error("Invalid role provided");
+  }
+  const query = "SELECT email FROM users WHERE role = $1";
+  const params = [role];
+  const result = await pool.query(query, params);
+  return result.rows.map((r) => r.email);
+};

@@ -306,3 +306,17 @@ export const getAllApproverDetails = async () => {
     throw error;
   }
 };
+
+export const sendemail = async (cs_id, email_for) => {
+  try {
+    await pool.query("Update receipts set email_sent = $1 WHERE id = $2", [
+      email_for,
+      cs_id,
+    ]);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong while sending email.",
+    });
+  }
+};

@@ -21,7 +21,8 @@ export const feedReceipts = async (req, res) => {
     const { formData, tableData } = req.body;
     if (formData.type !== "asset") {
       for (const [key, value] of Object.entries(formData)) {
-        if (key === "file" || key === "receiptupdated") continue;
+        if (key === "file" || key === "filename" || key === "receiptupdated")
+          continue;
         if (
           value === "" ||
           value === null ||
@@ -174,6 +175,7 @@ export const updateReceipt = async (req, res) => {
       for (const [key, value] of Object.entries(formData)) {
         if (
           key === "file" ||
+          key === "filename" ||
           key == "receiptupdated" ||
           key === "currency" ||
           key == "selectedvendorreason"
