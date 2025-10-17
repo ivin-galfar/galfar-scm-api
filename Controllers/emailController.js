@@ -16,7 +16,8 @@ export const EmailNotify = async (req, res) => {
         .json({ success: false, message: "Receipt not found." });
     }
     const roleMap = {
-      Initiator: 1,
+      InitH: 1,
+      InitA: 1,
       HOD: 2,
       GM: 3,
       CEO: 4,
@@ -30,13 +31,9 @@ export const EmailNotify = async (req, res) => {
     };
     let nextRole = "";
     if (status === "Approved") {
-      if (role === "CEO") {
-        nextRole = type === "hiring" ? "InitH" : "InitA";
-      } else {
-        nextRole = nextRoleMap[role];
-      }
-    } else {
       nextRole = type === "hiring" ? "InitH" : "InitA";
+    } else {
+      nextRole = nextRoleMap[role];
     }
 
     if (!nextRole) {
