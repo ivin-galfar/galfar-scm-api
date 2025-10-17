@@ -45,7 +45,11 @@ export const EmailNotify = async (req, res) => {
         message: `No next approver found for role: ${role}`,
       });
     }
-    const recipients = await getEmailsByRole(nextRole);
+    let recipients = await getEmailsByRole(nextRole);
+
+    if (nextRole == "InitA") {
+      recipients.push("Hari.HS@galfaremirates.com");
+    }
 
     const email_flag = roleMap[role] || 0;
 
