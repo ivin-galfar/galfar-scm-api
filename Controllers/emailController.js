@@ -29,7 +29,7 @@ export const EmailNotify = async (req, res) => {
       GM: "CEO",
     };
     let nextRole = "";
-    if (status != "review") {
+    if (status === "Approved") {
       if (role === "CEO") {
         nextRole = type === "hiring" ? "InitH" : "InitA";
       } else {
