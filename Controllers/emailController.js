@@ -62,14 +62,20 @@ export const EmailNotify = async (req, res) => {
     const mailOptions = {
       from: `"Galfar Intranet" <ivin.prathis@galfaremirates.com>`,
       to: recipients,
-      subject: "Comparative Statement - Approval",
+      subject: `Comparative Statement - ${
+        nextRole === "InitH" || nextRole === "InitA" ? status : "Approval"
+      }`,
       html: `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
     <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
       
       <!-- Header -->
       <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement Approval Required</h2>
+        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement ${
+          nextRole === "InitH" || nextRole === "InitA"
+            ? status
+            : "Approval Required"
+        }</h2>
       </div>
 
       <!-- Body -->
