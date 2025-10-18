@@ -44,7 +44,7 @@ export const EmailNotify = async (req, res) => {
     }
     let recipients = await getEmailsByRole(nextRole);
 
-    if (nextRole == "InitA") {
+    if (nextRole == "InitA" || role == "InitA" || role == "InitH") {
       recipients.push("Hari.HS@galfaremirates.com");
     }
 
@@ -104,7 +104,9 @@ export const EmailNotify = async (req, res) => {
         
         <!-- Signature -->
         <p style="margin: 24px 0 4px;">Thank you,</p>
-        <p style="margin: 0; font-weight: 600;">Software Development Team</p>
+        <p style="margin: 0; font-weight: 600;">Software Development Team,</p>
+        <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
+
       </div>
 
       <!-- Footer -->
