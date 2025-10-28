@@ -61,7 +61,7 @@ export const EmailNotify = async (req, res) => {
     });
 
     const mailOptions = {
-      from: `"Galfar Intranet" <ivin.prathis@galfaremirates.com>`,
+      from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
       to: recipients,
       subject: `Comparative Statement - ${
         nextRole === "InitH" || nextRole === "InitA" ? status : "Approval"
