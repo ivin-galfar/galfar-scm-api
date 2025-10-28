@@ -30,7 +30,7 @@ export const EmailNotify = async (req, res) => {
       GM: "CEO",
     };
     let nextRole = "";
-    if (status === "Approved") {
+    if (["Approved", "review", "Rejected"].includes(status)) {
       nextRole = type === "hiring" ? "InitH" : "InitA";
     } else {
       nextRole = nextRoleMap[role];
