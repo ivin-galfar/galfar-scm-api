@@ -6,6 +6,8 @@ import userRoutes from "./Routes/userRoutes.js";
 import ParticularRoutes from "./Routes/ParticularRoutes.js";
 import ReceiptRoutes from "./Routes/ReceiptRoutes.js";
 import EmailRoutes from "./Routes/EmailRoutes.js";
+import DepartmentRoutes from "./Routes/DepartmentRoutes.js";
+import LogisticsRoutes from "./Routes/LogisticsRoutes.js";
 
 import verifyToken from "./Utils/jwtTokenValidation.js";
 dotenv.config();
@@ -38,6 +40,8 @@ app.use("/users", userRoutes);
 app.use("/receipts", verifyToken, ReceiptRoutes);
 app.use("/particulars", verifyToken, ParticularRoutes);
 app.use("/emailnotify", verifyToken, EmailRoutes);
+app.use("/department", verifyToken, DepartmentRoutes);
+app.use("/logistics", verifyToken, LogisticsRoutes);
 
 app.get("/", (req, res) => res.send("API is running"));
 

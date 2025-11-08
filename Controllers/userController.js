@@ -2,15 +2,24 @@ import { addUser, existing } from "../Models/userModel.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../Utils/generateToken.js";
 export const createUser = async (req, res) => {
-  const { email, password, isAdmin, role } = req.body;
+  const { email, password, isAdmin, role, deptcode, pr_code } = req.body;
 
   const hasAccount = await existing(email);
   if (hasAccount.length > 0) {
     return res.status(401).json(" User already Exists!!");
   }
+
   try {
     const createdAt = new Date();
-    const user = await addUser(email, password, isAdmin, role, createdAt);
+    const user = await addUser(
+      email,
+      password,
+      isAdmin,
+      role,
+      deptcode,
+      pr_code,
+      createdAt
+    );
     res.json(user);
   } catch (er) {
     res.status(500).json({ error: er.message });

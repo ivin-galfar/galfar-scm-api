@@ -167,7 +167,7 @@ export const updateReceipt = async (req, res) => {
   const { formData, tableData, selectedIndex, selectedReason } = req.body;
 
   try {
-    if (formData.length == 0) {
+    if (formData?.length == 0) {
       return res.status(404).json({ error: "Statement not found" });
     }
 

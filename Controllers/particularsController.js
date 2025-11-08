@@ -8,7 +8,8 @@ import {
 } from "../Models/particularsModel.js";
 
 export const feedParticulars = async (req, res) => {
-  const { created, template } = req.body;
+  const { created, template, dept_code } = req.body;
+
   try {
     const templateexists = await existingParticularsByName(template.name);
     if (templateexists.length > 0) {
@@ -19,12 +20,17 @@ export const feedParticulars = async (req, res) => {
     const companyName = "Vendor Name";
     const recommendation = "Recommendation (If Any)";
     const created_at = new Date();
-    const particulars = [companyName, ...template.particulars, recommendation];
+    const particulars =
+      dept_code == 2
+        ? [...template.particulars]
+        : [companyName, ...template.particulars, recommendation];
+
     const newParticulars = await feedParticular(
       created.owner,
       template.name,
       particulars,
-      created_at
+      created_at,
+      dept_code
     );
     return res.status(201).json({
       message: "Template created successfully",
@@ -36,8 +42,9 @@ export const feedParticulars = async (req, res) => {
 };
 
 export const fetchParticulars = async (req, res) => {
+  const dept_code = req.query.dept_code;
   try {
-    const fetchParticular = await fetchAllParticulars();
+    const fetchParticular = await fetchAllParticulars(dept_code);
     return res.status(200).json({
       Particulars: fetchParticular,
     });

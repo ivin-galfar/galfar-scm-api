@@ -4,11 +4,12 @@ export const feedParticular = async (
   owner,
   template,
   particulars,
-  created_at
+  created_at,
+  dept_code
 ) => {
   const { rows } = await pool.query(
-    "INSERT INTO particulars (owner,template,particulars,created_at) VALUES ($1,$2,$3,$4) RETURNING *",
-    [owner, template, particulars, created_at]
+    "INSERT INTO particulars (owner,template,particulars,created_at,dept_code) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+    [owner, template, particulars, created_at, dept_code]
   );
 
   return rows[0];
@@ -29,8 +30,11 @@ export const existingParticularsByName = async (template) => {
   return existing.rows;
 };
 
-export const fetchAllParticulars = async () => {
-  const { rows } = await pool.query("SELECT * FROM particulars ");
+export const fetchAllParticulars = async (dept_code) => {
+  let query = "SELECT * FROM particulars where dept_code = $1";
+  let params = [dept_code];
+
+  const { rows } = await pool.query(query, params);
   return rows;
 };
 export const fetchParticularTemplate = async (id) => {

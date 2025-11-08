@@ -66,7 +66,6 @@ export const feedReceipt = async ({ formData, tableData }) => {
       insertedItems.push(itemRows[0]);
     }
   }
-
   return { receipt, items: insertedItems };
 };
 
@@ -314,9 +313,7 @@ export const sendemail = async (cs_id, email_for) => {
       cs_id,
     ]);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong while sending email.",
-    });
+    console.error("Error updating email_sent:", error.message);
+    throw error;
   }
 };
