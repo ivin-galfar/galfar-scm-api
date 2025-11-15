@@ -7,6 +7,7 @@ import {
   fetchoneReceiptTableData,
   getApproverDetailsByCSId,
   removeStatement,
+  revertrequest,
   updateDeleteFlag,
   updatereceipt,
   updateReceiptStatus,
@@ -178,7 +179,9 @@ export const updateReceipt = async (req, res) => {
           key === "filename" ||
           key == "receiptupdated" ||
           key === "currency" ||
-          key == "selectedvendorreason"
+          key == "selectedvendorreason" ||
+          key == "status" ||
+          key == "email_sent"
         )
           continue;
         if (
@@ -215,8 +218,8 @@ export const updateReceipt = async (req, res) => {
     const updatedFormData = {
       ...formData,
       tableData: transformedTableData,
-      selectedVendorIndex: selectedIndex,
-      selectedVendorReason: selectedReason,
+      selectedvendorindex: selectedIndex,
+      selectedvendorreason: selectedReason,
       receiptupdated: new Date(),
     };
     const updatedreceipt = await updatereceipt(cs_id, updatedFormData);
@@ -314,5 +317,20 @@ export const uploadFile = async (req, res) => {
     });
   } catch (error) {
     res.send(error);
+  }
+};
+
+export const withdrawRequest = async (req, res) => {
+  const { cs_id } = req.params;
+  const { status } = req.body;
+  const { approvalstatus } = req.body;
+
+  try {
+    await revertrequest(cs_id, approvalstatus, status);
+    return res
+      .status(200)
+      .json({ message: "Successfully Reverted the Request" });
+  } catch (error) {
+    res.status(500).json(error);
   }
 };
