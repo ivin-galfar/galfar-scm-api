@@ -10,6 +10,7 @@ import {
   updateReceipt,
   updatestatus,
   uploadFile,
+  withdrawRequest,
 } from "../Controllers/receiptController.js";
 import multer from "multer";
 
@@ -30,5 +31,6 @@ router.route("/").get(fetchReceipts);
 router.route("/:cs_id").get(fetchReceipt);
 router.route("/:cs_id").delete(removeReceipt);
 router.route("/:cs_id").post(softdeleteReceipt);
+router.route("/initiator/:cs_id").put(withdrawRequest);
 
 export default router;

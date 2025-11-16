@@ -82,7 +82,7 @@ export const allReceipts = async () => {
 export const allTableData = async () => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM tableData where deleted=0"
+      "SELECT * FROM tableData where deleted=0 ORDER BY id ASC"
     );
     return rows;
   } catch (error) {
@@ -106,7 +106,7 @@ export const fetchoneReceiptFormData = async (cs_id) => {
 export const fetchoneReceiptTableData = async (cs_id) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM tabledata where receipt_id = $1 and  deleted=0",
+      "SELECT * FROM tabledata where receipt_id = $1 and  deleted=0 ORDER BY id ASC",
       [cs_id]
     );
     return { tableData: rows };
@@ -177,14 +177,16 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
       locationvalue,
       equipmrnovalue,
       emrefnovalue,
-      requireddateValue,
-      requirementdurationValue,
+      requireddatevalue,
+      requirementdurationvalue,
       type,
       selectedvendorindex,
       selectedvendorreason,
       qty,
       file,
       filename,
+      status,
+      sentforapproval,
     } = updatedFormData;
 
     for (const item of updatedFormData.tableData ?? null) {
@@ -218,6 +220,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
          qty = $13,
          file =$14,
          filename = $15,
+         status =$16,
+         sentforapproval=$17,
          receiptupdated = now()
        WHERE id = $12
        RETURNING *`,
@@ -228,8 +232,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
         locationvalue,
         equipmrnovalue,
         emrefnovalue,
-        requireddateValue,
-        requirementdurationValue,
+        requireddatevalue,
+        requirementdurationvalue,
         type,
         selectedvendorindex,
         selectedvendorreason,
@@ -237,6 +241,8 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
         qty,
         file,
         filename,
+        status,
+        sentforapproval,
       ]
     );
 
@@ -314,6 +320,17 @@ export const sendemail = async (cs_id, email_for) => {
     ]);
   } catch (error) {
     console.error("Error updating email_sent:", error.message);
+    throw error;
+  }
+};
+
+export const revertrequest = async (cs_id, approvalstatus, status) => {
+  try {
+    await pool.query(
+      "Update receipts set status = $1,sentforapproval=$2  WHERE id = $3",
+      [status, approvalstatus, cs_id]
+    );
+  } catch (error) {
     throw error;
   }
 };
