@@ -6,7 +6,14 @@ import { sentemail } from "../Models/logisticsModel.js";
 export const EmailNotify = async (req, res) => {
   const { dept } = req.query || "";
   if (dept == "logistics") {
-    const { status, project_code, cargo_details, userInfo } = req.body;
+    const {
+      status,
+      project_code,
+      cargo_details,
+      userInfo,
+      shipment_no,
+      rejectedby,
+    } = req.body;
 
     const { role, pr_code } = userInfo;
 
@@ -96,11 +103,13 @@ export const EmailNotify = async (req, res) => {
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
         <p style="margin: 0 0 16px;">Dear Sir,</p>
-        <p style="margin: 0 0 16px;">The comparative statement  - <strong>${cs_id}/${
+        <p style="margin: 0 0 16px;">The comparative statement  - <strong>${shipment_no}/${
           project ? project + "/" : ""
         }${cargo_details}</strong> is <strong>${
           ["approved", "rejected"].includes(status)
-            ? status
+            ? status === "rejected"
+              ? `Rejected by ${rejectedby.toUpperCase()}`
+              : status
             : "awaiting your approval"
         }</strong>.</p>
 

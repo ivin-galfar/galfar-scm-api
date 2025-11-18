@@ -19,7 +19,9 @@ export const AddlogisticsStatement = async (req, res) => {
       key === "lastupdated" ||
       key === "review" ||
       key === "recommendation_reason" ||
-      key === "created_at"
+      key === "created_at" ||
+      key === "chargeable_weight" ||
+      key === "rejectedby"
     )
       continue;
     if (
