@@ -18,10 +18,11 @@ export const feedlogisticsStatement = async ({ formData, tableData }) => {
     file,
     filename,
     shipment_no,
+    createdby,
   } = formData;
   try {
     let query =
-      "INSERT INTO log_statements (cargo_details,gross_weight,chargeable_weight,description,supplier,scopeofwork,mode,date,po,project,status,recommendation_reason,selected_vendor_index,file,filename,shipment_no) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *";
+      "INSERT INTO log_statements (cargo_details,gross_weight,chargeable_weight,description,supplier,scopeofwork,mode,date,po,project,status,recommendation_reason,selected_vendor_index,file,filename,shipment_no,createdby) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *";
     let params = [
       cargo_details,
       gross_weight,
@@ -39,6 +40,7 @@ export const feedlogisticsStatement = async ({ formData, tableData }) => {
       file,
       filename,
       shipment_no,
+      createdby,
     ];
     const { rows } = await pool.query(query, params);
     const receipts = rows[0];
@@ -47,12 +49,19 @@ export const feedlogisticsStatement = async ({ formData, tableData }) => {
     if (tableData && tableData.length > 0) {
       for (const data of tableData) {
         let query =
-          "INSERT INTO forwarder_records (cs_id,particulars)  VALUES($1,$2) RETURNING *";
-        let params = [receipts.id, data];
+          "INSERT INTO forwarder_records (cs_id,particulars,forwarders,vendorcol,row_id)  VALUES($1,$2,$3,$4,$5) RETURNING *";
+        let params = [
+          receipts.id,
+          data.particulars,
+          data.forwarders,
+          Object.values(data.vendorcols),
+          data.r_id,
+        ];
         const { rows: items } = await pool.query(query, params);
         insertedItems.push(items[0]);
       }
     }
+
     return { receipts, insertedItems };
   } catch (error) {
     throw error;
@@ -113,10 +122,9 @@ export const updatelogisticsStatement = async ({
     if (tableData && tableData.length > 0) {
       for (const data of tableData) {
         let query =
-          "UPDATE forwarder_records SET particulars=$1 where id=$2 RETURNING * ";
-        let params = [JSON.stringify(data), JSON.stringify(data.id)];
+          "UPDATE forwarder_records SET forwarders=$1 where id=$2 RETURNING * ";
+        let params = [data.forwarders, data.id];
         const { rows: items } = await pool.query(query, params);
-
         updatedItems.push(items[0]);
       }
     }
@@ -140,7 +148,7 @@ export const fetchformData = async (cs_id) => {
 export const fetchTableData = async (cs_id) => {
   try {
     let query =
-      "SELECT * FROM forwarder_records where cs_id =$1 and deleted=0 ";
+      "SELECT * FROM forwarder_records where cs_id =$1 and deleted=0 ORDER BY id ASC ";
     let params = [cs_id];
     const { rows } = await pool.query(query, params);
 
