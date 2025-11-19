@@ -181,7 +181,8 @@ export const updateReceipt = async (req, res) => {
           key === "currency" ||
           key == "selectedvendorreason" ||
           key == "status" ||
-          key == "email_sent"
+          key == "email_sent" ||
+          key == "selectedvendorindex"
         )
           continue;
         if (
