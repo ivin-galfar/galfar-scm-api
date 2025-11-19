@@ -87,7 +87,9 @@ export const EmailNotify = async (req, res) => {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
         subject: `Comparative Statement - ${
-          nextRole === "initlg" ? status : "Approval"
+          nextRole === "initlg"
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            : "Approval"
         }`,
         html: `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
@@ -95,8 +97,10 @@ export const EmailNotify = async (req, res) => {
       
       <!-- Header -->
       <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement ${
-          nextRole === "initlg" ? status : "Approval Required"
+        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
+          nextRole === "initlg"
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            : "Approval Required"
         }</h2>
       </div>
 
@@ -214,7 +218,9 @@ export const EmailNotify = async (req, res) => {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
         subject: `Comparative Statement - ${
-          nextRole === "inith" || nextRole === "inita" ? status : "Approval"
+          nextRole === "inith" || nextRole === "inita"
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            : "Approval"
         }`,
         html: `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
@@ -222,9 +228,9 @@ export const EmailNotify = async (req, res) => {
       
       <!-- Header -->
       <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement ${
+        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
           nextRole === "InitH" || nextRole === "inita"
-            ? status
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
         }</h2>
       </div>
