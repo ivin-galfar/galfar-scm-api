@@ -54,7 +54,7 @@ export const feedlogisticsStatement = async ({ formData, tableData }) => {
           receipts.id,
           data.particulars,
           data.forwarders,
-          Object.values(data.vendorcols),
+          Object.values(data.vendorcol),
           data.r_id,
         ];
         const { rows: items } = await pool.query(query, params);
@@ -122,8 +122,8 @@ export const updatelogisticsStatement = async ({
     if (tableData && tableData.length > 0) {
       for (const data of tableData) {
         let query =
-          "UPDATE forwarder_records SET forwarders=$1 where id=$2 RETURNING * ";
-        let params = [data.forwarders, data.id];
+          "UPDATE forwarder_records SET forwarders=$1,vendorcol=$2 where id=$3 RETURNING * ";
+        let params = [data.forwarders, Object.values(data.vendorcol), data.id];
         const { rows: items } = await pool.query(query, params);
         updatedItems.push(items[0]);
       }
