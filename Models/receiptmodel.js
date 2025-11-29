@@ -69,9 +69,87 @@ export const feedReceipt = async ({ formData, tableData }) => {
   return { receipt, items: insertedItems };
 };
 
-export const allReceipts = async () => {
+export const allReceipts = async (
+  type,
+  module,
+  page,
+  limit,
+  statusfilter,
+  multiStatuses,
+  search,
+  Statuses
+) => {
+  const filterType = type === "null" || type == "" ? null : type;
+  let values = [];
+
   try {
-    const { rows } = await pool.query("SELECT * FROM receipts where deleted=0");
+    let query = `SELECT DISTINCT ON (r.id) r.id,r.type, r.hiringname, r.qty, r.status,r.sentforapproval,r.created_at,r.comments_count`;
+    if (module?.startsWith("/dashboard")) {
+      query += ` ,COALESCE(
+        json_agg(
+          json_build_object(
+            'id',ad.id,
+            'role', ad.role,
+            'comments', ad.comments,
+            'timestamp', ad.timestamp,
+            'action',ad.action,
+            'rejectedby',ad.rejectedby
+          )
+        ) FILTER (WHERE ad.id IS NOT NULL),
+        '[]'
+      ) AS approverdetails`;
+    }
+    query +=
+      " FROM receipts r LEFT JOIN approverdetails ad ON ad.cs_id = r.id where r.deleted=0";
+    if (filterType) {
+      query += ` AND ($${values.length + 1}::text IS NULL OR r.type = $${
+        values.length + 1
+      })`;
+      values.push(filterType);
+    }
+
+    if (module?.startsWith("/dashboard")) {
+      const offset = page * limit;
+      if (multiStatuses.length > 0) {
+        query += ` AND LOWER(r.status) = ANY($${values.length + 1})`;
+        values.push(multiStatuses);
+      } else {
+        query += ` AND ($${
+          values.length + 1
+        }::text[] IS NULL OR LOWER(r.status) = ANY($${
+          values.length + 1
+        }) OR (r.status IS NULL AND '' = ANY($${values.length + 1})))`;
+        values.push(Statuses);
+      }
+
+      if (statusfilter) {
+        query += ` AND r.status = ($${values.length + 1})`;
+        values.push(statusfilter);
+      }
+      if (search) {
+        query += ` AND r.id::text ILIKE $${values.length + 1} `;
+        values.push(`%${search}%`);
+      }
+
+      query += " GROUP BY r.id ORDER BY r.id Desc";
+      query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+
+      values.push(limit, offset);
+    } else if (module?.startsWith("/receipts")) {
+      query += ` AND ($${
+        values.length + 1
+      }::text[] IS NULL OR LOWER(r.status) = ANY($${
+        values.length + 1
+      }) OR  (r.status IS NULL AND '' = ANY($${values.length + 1})))`;
+      values.push(Statuses);
+
+      query += ` ORDER BY r.id Desc  LIMIT 30`;
+    } else {
+      query += " GROUP BY r.id ORDER BY r.id Desc";
+    }
+
+    const { rows } = await pool.query(query, values);
+
     return rows;
   } catch (error) {
     console.error("Error fetching receipts:", error);
@@ -79,6 +157,54 @@ export const allReceipts = async () => {
   }
 };
 
+export const totalReceipts = async (
+  type,
+  Statuses,
+  statusfilter,
+  multiStatusfilter,
+  searchcs
+) => {
+  try {
+    let query = `Select count(*) from receipts  where deleted=0  `;
+    let values = [];
+
+    if (type) {
+      query += ` AND ($${values.length + 1}::text IS NULL OR type = $${
+        values.length + 1
+      })`;
+      values.push(type);
+    }
+
+    if (multiStatusfilter.length > 0) {
+      query += ` AND LOWER(status) = ANY($${values.length + 1})`;
+      values.push(multiStatusfilter);
+    } else {
+      let updatedStatus = Statuses.map((s) => s.trim());
+      query += ` AND ($${
+        values.length + 1
+      }::text[] IS NULL OR COALESCE(LOWER(status), '') = ANY($${
+        values.length + 1
+      }))`;
+      values.push(updatedStatus);
+    }
+
+    if (searchcs) {
+      query += ` AND id::text ILIKE $${values.length + 1} `;
+      values.push(`%${searchcs}%`);
+    }
+
+    if (statusfilter) {
+      query += ` AND status = ($${values.length + 1})`;
+      values.push(statusfilter);
+    }
+
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  } catch (error) {
+    console.error("Error fetching receipts:", error);
+    throw error;
+  }
+};
 export const allTableData = async () => {
   try {
     const { rows } = await pool.query(

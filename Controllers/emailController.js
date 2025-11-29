@@ -119,7 +119,7 @@ export const EmailNotify = async (req, res) => {
 
         <!-- Button -->
         <div style="text-align: center; margin: 30px 0;">
-          <a href="http://localhost:5173/lstatements/${cs_id}"
+          <a href="https://intranet.galfaremirates.com/lstatements/${cs_id}"
              style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
             View Comparative Statement
           </a>
@@ -198,7 +198,13 @@ export const EmailNotify = async (req, res) => {
       }
       let recipients = await getEmailsByRole(nextRole);
 
-      if (nextRole == "inita" || role == "inita" || role == "inith") {
+      if (
+        process.env.ENVIRONMENT == "production" &&
+        (nextRole == "inita" ||
+          nextRole == "inith" ||
+          role == "inita" ||
+          role == "inith")
+      ) {
         recipients.push("Hari.HS@galfaremirates.com");
       }
 
