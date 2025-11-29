@@ -8,6 +8,7 @@ import {
   getApproverDetailsByCSId,
   removeStatement,
   revertrequest,
+  totalReceipts,
   updateDeleteFlag,
   updatereceipt,
   updateReceiptStatus,
@@ -69,23 +70,81 @@ export const feedReceipts = async (req, res) => {
 };
 
 export const fetchReceipts = async (req, res) => {
-  try {
-    const formData = await allReceipts();
-    const tableData = await allTableData();
+  const {
+    type,
+    module,
+    page,
+    limit,
+    statusfilter,
+    multiStatus,
+    search,
+    expectedStatuses,
+  } = req.query;
 
-    const tableDataMap = tableData.reduce((acc, item) => {
-      const receiptId = item.receipt_id;
-      if (!acc[receiptId]) acc[receiptId] = [];
-      acc[receiptId].push(item);
-      return acc;
-    }, {});
+  let Statuses = [];
+  if (expectedStatuses) {
+    Statuses = req.query.expectedStatuses.split(",");
+  }
+  let multiStatuses = [];
+  if (multiStatus) {
+    multiStatuses = multiStatus.split(",");
+  }
+
+  try {
+    const formData = await allReceipts(
+      type,
+      module,
+      page,
+      limit,
+      statusfilter,
+      multiStatuses,
+      search,
+      Statuses
+    );
+
+    // const tableData = await allTableData();
+
+    // const tableDataMap = tableData.reduce((acc, item) => {
+    //   const receiptId = item.receipt_id;
+    //   if (!acc[receiptId]) acc[receiptId] = [];
+    //   acc[receiptId].push(item);
+    //   return acc;
+    // }, {});
 
     const mappedReceipts = formData.map((receipt) => ({
       formData: receipt,
-      tableData: tableDataMap[receipt.id] || [],
+      // tableData: tableDataMap[receipt.id] || [],
     }));
 
     return res.status(200).json({ receipts: mappedReceipts });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const fetchallreceipts = async (req, res) => {
+  const { type, expectedStatuses, statusfilter, multiStatus, searchcs } =
+    req.query;
+
+  try {
+    let statuses = [];
+    if (expectedStatuses) {
+      statuses = req.query.expectedStatuses.split(",");
+    }
+    let multiStatuses = [];
+    if (multiStatus) {
+      multiStatuses = multiStatus.split(",");
+    }
+
+    const { count } = await totalReceipts(
+      type,
+      statuses,
+      statusfilter,
+      multiStatuses,
+      searchcs
+    );
+
+    return res.status(200).json({ receipts_count: count });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

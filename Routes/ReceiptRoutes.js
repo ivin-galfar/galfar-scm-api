@@ -1,6 +1,7 @@
 import express from "express";
 import {
   feedReceipts,
+  fetchallreceipts,
   fetchApproverDetails,
   fetchReceipt,
   fetchReceipts,
@@ -28,6 +29,7 @@ router.route("/approver/:cs_id").put(updateApprovalstatus);
 
 router.route("/").post(feedReceipts);
 router.route("/").get(fetchReceipts);
+router.route("/totalreceipts").get(fetchallreceipts);
 router.route("/:cs_id").get(fetchReceipt);
 router.route("/:cs_id").delete(removeReceipt);
 router.route("/:cs_id").post(softdeleteReceipt);
