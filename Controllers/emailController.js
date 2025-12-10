@@ -2,7 +2,6 @@ import nodemailer from "nodemailer";
 import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
 import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
 import { sentemail } from "../Models/logisticsModel.js";
-import { dateformatted } from "../Utils/helpers.js";
 import pmMap from "../Utils/pmmapping.js";
 
 export const EmailNotify = async (req, res) => {
@@ -146,7 +145,7 @@ export const EmailNotify = async (req, res) => {
       };
       const approverdetails = {
         role: role,
-        datetime: dateformatted(new Date()),
+        datetime: new Date(),
         ...(role === "pm" && { pm }),
       };
       const [emailInfo] = await Promise.all([
