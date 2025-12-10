@@ -161,7 +161,7 @@ export const fetchTableData = async (cs_id) => {
 export const fetchAllCsid = async () => {
   try {
     const { rows } = await pool.query(
-      "SELECT id,status,project,created_at,cargo_details FROM log_statements where deleted=0"
+      "SELECT id,status,project,created_at,cargo_details,createdby FROM log_statements where deleted=0 ORDER BY id Desc"
     );
     return rows;
   } catch (error) {
@@ -172,7 +172,7 @@ export const fetchAllCsid = async () => {
 export const fetchAllCsidvalues = async () => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM log_statements where deleted=0"
+      "SELECT * FROM log_statements where deleted=0 ORDER BY id Desc"
     );
     return rows;
   } catch (error) {
@@ -273,14 +273,26 @@ export const updateDeleteFlag = async (cs_id) => {
     throw error;
   }
 };
-export const sentemail = async (cs_id, email_for) => {
+export const sentemail = async (cs_id, email_for, approverdetails) => {
   try {
     await pool.query(
-      "Update log_statements set email_sent = $1 WHERE id = $2",
-      [email_for, cs_id]
+      "Update log_statements set email_sent = $1, approver_info = COALESCE(approver_info, '[]'::jsonb) || $2::jsonb WHERE id = $3",
+      [email_for, approverdetails, cs_id]
     );
   } catch (error) {
     console.error("Error updating email_sent:", error.message);
+    throw error;
+  }
+};
+
+export const getappoverdetails = async (cs_id) => {
+  try {
+    let query =
+      "SELECT id,approver_info,project,status,comment_in,comment_pm,comment_gm,comment_fm,comment_ceo,createdby FROM log_statements WHERE id = $1";
+    let params = [cs_id];
+    const { rows } = await pool.query(query, params);
+    return rows[0];
+  } catch (error) {
     throw error;
   }
 };

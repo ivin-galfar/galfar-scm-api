@@ -2,6 +2,8 @@ import nodemailer from "nodemailer";
 import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
 import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
 import { sentemail } from "../Models/logisticsModel.js";
+import { dateformatted } from "../Utils/helpers.js";
+import pmMap from "../Utils/pmmapping.js";
 
 export const EmailNotify = async (req, res) => {
   const { dept } = req.query || "";
@@ -15,7 +17,7 @@ export const EmailNotify = async (req, res) => {
       rejectedby,
     } = req.body;
 
-    const { role, pr_code } = userInfo;
+    const { role } = userInfo;
 
     const { cs_id } = req.params;
     let definedprojects = [
@@ -23,7 +25,7 @@ export const EmailNotify = async (req, res) => {
     ];
     let project =
       typeof project_code === "string" ? Number(project_code) : project_code;
-
+    let pm = pmMap[project]?.name || "";
     if (role === "pm") {
       if (!definedprojects.includes(project)) {
         return res.status(400).json({
@@ -142,16 +144,21 @@ export const EmailNotify = async (req, res) => {
   </div>
 `,
       };
-
+      const approverdetails = {
+        role: role,
+        datetime: dateformatted(new Date()),
+        ...(role === "pm" && { pm }),
+      };
       const [emailInfo] = await Promise.all([
         transporter.sendMail(mailOptions),
-        sentemail(cs_id, email_flag),
+        sentemail(cs_id, email_flag, approverdetails),
       ]);
 
       return res.status(200).json({
         success: true,
         message: "Email sent successfully.",
         emailInfo,
+        approvedInfo: approverdetails,
       });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
