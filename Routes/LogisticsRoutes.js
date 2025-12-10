@@ -1,6 +1,7 @@
 import express from "express";
 import {
   AddlogisticsStatement,
+  approverDetails,
   fetchAllCs,
   fetchAllID,
   fetchLogisticsStatement,
@@ -17,5 +18,6 @@ router.route("/:cs_id").get(fetchLogisticsStatement);
 router.route("/updatestatement/:cs_id").post(updateCS);
 router.route("/updatestatementvalues/:cs_id").put(UpdatelogisticsStatement);
 router.route("/delete/:cs_id").post(softdeletestatement);
+router.route("/statements/approverdetails/:cs_id").get(approverDetails);
 
 export default router;

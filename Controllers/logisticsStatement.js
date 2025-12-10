@@ -4,6 +4,7 @@ import {
   fetchAllCsidvalues,
   fetchformData,
   fetchTableData,
+  getappoverdetails,
   updateCSStatus,
   updateDeleteFlag,
   updatelogisticsStatement,
@@ -161,6 +162,16 @@ export const softdeletestatement = async (req, res) => {
   try {
     const deletedstatement = await updateDeleteFlag(cs_id);
     return res.status(200).json(deletedstatement);
+  } catch (error) {
+    return res.status(500).json(error);
+  }
+};
+
+export const approverDetails = async (req, res) => {
+  const { cs_id } = req.params;
+  try {
+    const approverdetails = await getappoverdetails(cs_id);
+    return res.status(200).json(approverdetails);
   } catch (error) {
     return res.status(500).json(error);
   }
