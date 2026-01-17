@@ -158,22 +158,85 @@ export const fetchTableData = async (cs_id) => {
   }
 };
 
-export const fetchAllCsid = async () => {
+export const fetchAllCsid = async (module) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT id,status,project,created_at,cargo_details,createdby FROM log_statements where deleted=0 ORDER BY id Desc"
-    );
+    let query =
+      "SELECT id,status,project,created_at,cargo_details,createdby FROM log_statements where deleted=0 ORDER BY id Desc";
+    if (module?.startsWith("/lstatements")) {
+      query += " LIMIT 20";
+    }
+    if (module?.startsWith("/dashboardlg")) {
+      query += " LIMIT 100";
+    }
+    const { rows } = await pool.query(query);
     return rows;
   } catch (error) {
     throw error;
   }
 };
 
-export const fetchAllCsidvalues = async () => {
+export const fetchtotalstatements = async (statusfilter, role, searchcs) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM log_statements where deleted=0 ORDER BY id Desc"
-    );
+    let query = " SELECT COUNT(*) FROM log_statements where deleted=0";
+    let values = [];
+
+    if (statusfilter != "All") {
+      if (statusfilter == "Pending") {
+        query += ` AND status LIKE ($${values.length + 1}::text)`;
+        values.push(`%${role.toLowerCase()}`);
+      } else {
+        query += ` AND status = ($${values.length + 1})`;
+        values.push(statusfilter.toLowerCase());
+      }
+    }
+    if (searchcs) {
+      query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
+      values.push(`%${searchcs}%`);
+    }
+    if (role != "initlg") {
+      query += ` AND status != 'created' AND status IS NOT NULL`;
+    }
+
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchAllCsidvalues = async (
+  statusfilter,
+  searchcs,
+  page,
+  limit,
+  role
+) => {
+  try {
+    const offset = page * limit;
+
+    let values = [];
+    let query = "SELECT * FROM log_statements where deleted=0 ";
+    if (statusfilter != "All") {
+      if (statusfilter == "Pending") {
+        query += ` AND status LIKE ($${values.length + 1}::text)`;
+        values.push(`%${role.toLowerCase()}`);
+      } else {
+        query += ` AND status = ($${values.length + 1})`;
+        values.push(statusfilter.toLowerCase());
+      }
+    }
+    if (searchcs) {
+      query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
+      values.push(`%${searchcs}%`);
+    }
+    if (role != "initlg") {
+      query += ` AND status != 'created' AND status IS NOT NULL`;
+    }
+    query += ` ORDER BY id Desc LIMIT $${values.length + 1} OFFSET $${
+      values.length + 2
+    }`;
+    values.push(limit, offset);
+    const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
     throw error;

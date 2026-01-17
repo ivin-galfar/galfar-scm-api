@@ -4,6 +4,7 @@ import {
   fetchAllCsidvalues,
   fetchformData,
   fetchTableData,
+  fetchtotalstatements,
   getappoverdetails,
   updateCSStatus,
   updateDeleteFlag,
@@ -95,8 +96,9 @@ export const fetchLogisticsStatement = async (req, res) => {
 };
 
 export const fetchAllID = async (req, res) => {
+  const { module } = req.query;
   try {
-    const cs_id = await fetchAllCsid();
+    const cs_id = await fetchAllCsid(module);
     return res.status(200).json(cs_id);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -104,11 +106,33 @@ export const fetchAllID = async (req, res) => {
 };
 
 export const fetchAllCs = async (req, res) => {
+  const { statusfilter, searchcs, pageIndex, pageSize, role } = req.query;
+
   try {
-    const cs_id = await fetchAllCsidvalues();
+    const cs_id = await fetchAllCsidvalues(
+      statusfilter,
+      searchcs,
+      pageIndex,
+      pageSize,
+      role
+    );
     return res.status(200).json(cs_id);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const fetchCscount = async (req, res) => {
+  const { statusfilter, searchcs, role } = req.query;
+
+  try {
+    const { count } = await fetchtotalstatements(statusfilter, role, searchcs);
+
+    return res.status(200).json({ receipts_count: count });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

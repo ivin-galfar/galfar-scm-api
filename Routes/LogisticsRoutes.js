@@ -4,6 +4,7 @@ import {
   approverDetails,
   fetchAllCs,
   fetchAllID,
+  fetchCscount,
   fetchLogisticsStatement,
   softdeletestatement,
   updateCS,
@@ -14,6 +15,7 @@ const router = express.Router();
 router.route("/").post(AddlogisticsStatement);
 router.route("/allcs").get(fetchAllID);
 router.route("/statements").get(fetchAllCs);
+router.route("/totalreceipts").get(fetchCscount);
 router.route("/:cs_id").get(fetchLogisticsStatement);
 router.route("/updatestatement/:cs_id").post(updateCS);
 router.route("/updatestatementvalues/:cs_id").put(UpdatelogisticsStatement);
