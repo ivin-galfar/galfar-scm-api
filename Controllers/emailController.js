@@ -97,6 +97,30 @@ export const EmailNotify = async (req, res) => {
     <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
       
       <!-- Header -->
+      <!--[if mso]>
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+            <td bgcolor="#004080"
+                style="padding:16px 24px;">
+              <p style="margin:0;
+                        color:#ffffff;
+                        font-size:20px;
+                        font-weight:bold;
+                        font-family:Arial, sans-serif;">
+                Comparative Statement -
+                ${
+                  nextRole === "initlg"
+                    ? status.charAt(0).toUpperCase() +
+                      status.slice(1).toLowerCase()
+                    : "Approval Required"
+                }
+              </p>
+            </td>
+          </tr>
+        </table>
+      <![endif]-->
+
+      <!--[if !mso]><!-- -->
       <div style="background-color: #004080; padding: 16px 24px;">
         <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
           nextRole === "initlg"
@@ -104,6 +128,7 @@ export const EmailNotify = async (req, res) => {
             : "Approval Required"
         }</h2>
       </div>
+      <![endif]-->
 
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
@@ -119,14 +144,31 @@ export const EmailNotify = async (req, res) => {
         }</strong>.</p>
 
         <!-- Button -->
+         <!--[if mso]>
+        <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
+        <tr>
+          <td align="center"
+              bgcolor="#004080"
+              style="padding:12px 24px; font-weight:bold; font-size:16px;">
+            <a href="https://intranet.galfaremirates.com/lstatements/${cs_id}"
+              style="color:#ffffff; text-decoration:none; display:inline-block;">
+              View Comparative Statement
+            </a>
+          </td>
+
+        </tr>
+      </table>
+      <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
+      <![endif]-->
+       <!--[if !mso]><!-- -->
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://intranet.galfaremirates.com/lstatements/${cs_id}"
              style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
             View Comparative Statement
           </a>
-        </div>
-
-        <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
+          </div>
+          <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
+      <!--<![endif]-->
         
         <!-- Signature -->
         <p style="margin: 24px 0 4px;">Thank you,</p>
@@ -136,7 +178,7 @@ export const EmailNotify = async (req, res) => {
       </div>
 
       <!-- Footer -->
-      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;">
+      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
         This is an automated email. Please do not reply.
       </div>
     </div>
@@ -239,6 +281,30 @@ export const EmailNotify = async (req, res) => {
     <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
       
       <!-- Header -->
+       <!--[if mso]>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+ <tr>
+    <td bgcolor="#004080"
+        style="padding:16px 24px;">
+      <p style="margin:0;
+                color:#ffffff;
+                font-size:20px;
+                font-weight:bold;
+                font-family:Arial, sans-serif;">
+        Comparative Statement -
+        ${
+          nextRole === "InitH" || nextRole === "inita"
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            : "Approval Required"
+        }
+      </p>
+    </td>
+  </tr>
+</table>
+
+         <![endif]-->
+        
+      <!--[if !mso]><!-- -->
       <div style="background-color: #004080; padding: 16px 24px;">
         <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
           nextRole === "InitH" || nextRole === "inita"
@@ -246,10 +312,17 @@ export const EmailNotify = async (req, res) => {
             : "Approval Required"
         }</h2>
       </div>
+      <!--<![endif]-->
 
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
+        <!--[if mso]>
+          <p style="margin-top: 30px">Dear Sir,</p>
+         <![endif]-->
+
+       <!--[if !mso]><!-- -->
         <p style="margin: 0 0 16px;">Dear Sir,</p>
+         <!--<![endif]-->
         <p style="margin: 0 0 16px;">The comparative statement (${type}) - <strong>${cs_id}/${
           projectvalue ? projectvalue + "/" : ""
         }${hiringname}</strong> is <strong>${
@@ -261,14 +334,33 @@ export const EmailNotify = async (req, res) => {
         }</strong>.</p>
 
         <!-- Button -->
+        <!--[if mso]>
+        <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
+        <tr>
+          <td align="center"
+              bgcolor="#004080"
+              style="padding:12px 24px; font-weight:bold; font-size:16px;">
+            <a href="https://intranet.galfaremirates.com/receipts/${cs_id}"
+              style="color:#ffffff; text-decoration:none; display:inline-block;">
+              View Comparative Statement
+            </a>
+          </td>
+
+        </tr>
+      </table>
+      <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
+      <![endif]-->
+
+
+      <!--[if !mso]><!-- -->
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://intranet.galfaremirates.com/receipts/${cs_id}"
              style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
             View Comparative Statement
           </a>
-        </div>
-
-        <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
+          </div>
+          <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
+      <!--<![endif]-->
         
         <!-- Signature -->
         <p style="margin: 24px 0 4px;">Thank you,</p>
@@ -276,10 +368,10 @@ export const EmailNotify = async (req, res) => {
         <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
 
       </div>
-
+  
       <!-- Footer -->
-      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;">
-        This is an automated email. Please do not reply.
+      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
+      This is an automated email. Please do not reply.
       </div>
     </div>
   </div>
