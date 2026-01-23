@@ -114,7 +114,7 @@ export const fetchAllCs = async (req, res) => {
       searchcs,
       pageIndex,
       pageSize,
-      role
+      role,
     );
     return res.status(200).json(cs_id);
   } catch (error) {
@@ -148,6 +148,7 @@ export const updateCS = async (req, res) => {
     comments_fm,
     comments_ceo,
     rejectedby,
+    recalled_times,
   } = req.body;
 
   const { cs_id } = req.params;
@@ -164,7 +165,8 @@ export const updateCS = async (req, res) => {
       comments_gm,
       comments_fm,
       comments_ceo,
-      rejectedby
+      rejectedby,
+      recalled_times,
     );
 
     return res.status(200).json({ message: "Successfully Updated" });

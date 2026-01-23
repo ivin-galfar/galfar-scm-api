@@ -209,7 +209,7 @@ export const fetchAllCsidvalues = async (
   searchcs,
   page,
   limit,
-  role
+  role,
 ) => {
   try {
     const offset = page * limit;
@@ -254,16 +254,23 @@ export const updateCSStatus = async (
   comments_gm,
   comments_fm,
   comments_ceo,
-  rejectedby
+  rejectedby,
+  recalled_times,
 ) => {
   try {
     let query = "UPDATE log_statements SET status = $1";
     const params = [status];
     let paramIndex = 2;
 
-    if (sentforapproval !== undefined && sentforapproval !== null) {
+    if (sentforapproval !== undefined) {
       query += `, sentforapproval = $${paramIndex}`;
       params.push(sentforapproval);
+      paramIndex++;
+    }
+
+    if (recalled_times) {
+      query += `, recalled_times = $${paramIndex}`;
+      params.push(recalled_times);
       paramIndex++;
     }
 
@@ -324,7 +331,7 @@ export const updateDeleteFlag = async (cs_id) => {
   try {
     await pool.query(
       "Update forwarder_records set deleted = 1 WHERE cs_id = $1",
-      [cs_id]
+      [cs_id],
     );
     await pool.query("Update log_statements set deleted = 1 WHERE id = $1", [
       cs_id,
@@ -340,7 +347,7 @@ export const sentemail = async (cs_id, email_for, approverdetails) => {
   try {
     await pool.query(
       "Update log_statements set email_sent = $1, approver_info = COALESCE(approver_info, '[]'::jsonb) || $2::jsonb WHERE id = $3",
-      [email_for, approverdetails, cs_id]
+      [email_for, approverdetails, cs_id],
     );
   } catch (error) {
     console.error("Error updating email_sent:", error.message);
