@@ -1,3 +1,4 @@
+import { fetchallreceiptslogic } from "../helpers/receiptslogic.js";
 import {
   AddApprovalStatus,
   allReceipts,
@@ -52,7 +53,7 @@ export const feedReceipts = async (req, res) => {
           qty,
           vendors: cleanVendors,
         };
-      }
+      },
     );
 
     const newReceipt = await feedReceipt({
@@ -99,7 +100,7 @@ export const fetchReceipts = async (req, res) => {
       statusfilter,
       multiStatuses,
       search,
-      Statuses
+      Statuses,
     );
 
     // const tableData = await allTableData();
@@ -127,23 +128,13 @@ export const fetchallreceipts = async (req, res) => {
     req.query;
 
   try {
-    let statuses = [];
-    if (expectedStatuses) {
-      statuses = req.query.expectedStatuses.split(",");
-    }
-    let multiStatuses = [];
-    if (multiStatus) {
-      multiStatuses = multiStatus.split(",");
-    }
-
-    const { count } = await totalReceipts(
+    const count = await fetchallreceiptslogic(
       type,
-      statuses,
+      expectedStatuses,
       statusfilter,
-      multiStatuses,
-      searchcs
+      multiStatus,
+      searchcs,
     );
-
     return res.status(200).json({ receipts_count: count });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -182,7 +173,7 @@ export const updatestatus = async (req, res) => {
       cs_id,
       selectedVendorIndex,
       selectedVendorReason,
-      status
+      status,
     );
     return res.json({ formData: updated[0] });
   } catch (error) {
@@ -214,7 +205,7 @@ export const updateApprovalstatus = async (req, res) => {
       userId,
       status,
       rejectedby || null,
-      approverstatus || null
+      approverstatus || null,
     );
     return res.json(updatestatus);
   } catch (error) {
@@ -272,7 +263,7 @@ export const updateReceipt = async (req, res) => {
           qty,
           vendors: cleanVendors,
         };
-      }
+      },
     );
 
     const updatedFormData = {
@@ -350,12 +341,12 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ message: "No file Uploaded" });
     const sharedKeyCredential = new StorageSharedKeyCredential(
       account,
-      accountKey
+      accountKey,
     );
 
     const blobServiceClient = new BlobServiceClient(
       `https://${account}.blob.core.windows.net`,
-      sharedKeyCredential
+      sharedKeyCredential,
     );
     const uploadedFiles = [];
     const containerClient = blobServiceClient.getContainerClient(containerName);

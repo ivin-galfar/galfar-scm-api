@@ -10,6 +10,7 @@ import DepartmentRoutes from "./Routes/DepartmentRoutes.js";
 import LogisticsRoutes from "./Routes/LogisticsRoutes.js";
 
 import verifyToken from "./Utils/jwtTokenValidation.js";
+import { cronemails } from "./cron/emailCron.js";
 dotenv.config();
 const port = process.env.PORT;
 
@@ -50,3 +51,4 @@ app.use(notFound, errorHandler);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+cronemails();

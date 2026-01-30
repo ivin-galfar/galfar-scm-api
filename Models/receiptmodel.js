@@ -17,14 +17,14 @@ export const feedReceipt = async ({ formData, tableData }) => {
     qty,
   } = formData;
   const recommendationRow = tableData.find(
-    (row) => row.particulars === "Recommendation (If Any)"
+    (row) => row.particulars === "Recommendation (If Any)",
   );
   let selectedRecommendation = "";
 
   if (recommendationRow && recommendationRow.vendors) {
     selectedRecommendation =
       Object.values(recommendationRow.vendors).find(
-        (val) => val && val.trim() !== ""
+        (val) => val && val.trim() !== "",
       ) || "";
   }
 
@@ -45,7 +45,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
       filename,
       qty,
       selectedRecommendation,
-    ]
+    ],
   );
 
   const receipt = rows[0];
@@ -61,7 +61,7 @@ export const feedReceipt = async ({ formData, tableData }) => {
           data.particulars,
           formData.qty,
           JSON.stringify(data.vendors),
-        ]
+        ],
       );
       insertedItems.push(itemRows[0]);
     }
@@ -77,7 +77,7 @@ export const allReceipts = async (
   statusfilter,
   multiStatuses,
   search,
-  Statuses
+  Statuses,
 ) => {
   const filterType = type === "null" || type == "" ? null : type;
   let values = [];
@@ -162,7 +162,7 @@ export const totalReceipts = async (
   Statuses,
   statusfilter,
   multiStatusfilter,
-  searchcs
+  searchcs,
 ) => {
   try {
     let query = `Select count(*) from receipts  where deleted=0  `;
@@ -208,7 +208,7 @@ export const totalReceipts = async (
 export const allTableData = async () => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM tableData where deleted=0 ORDER BY id ASC"
+      "SELECT * FROM tableData where deleted=0 ORDER BY id ASC",
     );
     return rows;
   } catch (error) {
@@ -221,7 +221,7 @@ export const fetchoneReceiptFormData = async (cs_id) => {
   try {
     const { rows } = await pool.query(
       "SELECT * FROM receipts where id = $1 and deleted=0",
-      [cs_id]
+      [cs_id],
     );
     return { formData: rows[0] };
   } catch (error) {
@@ -233,7 +233,7 @@ export const fetchoneReceiptTableData = async (cs_id) => {
   try {
     const { rows } = await pool.query(
       "SELECT * FROM tabledata where receipt_id = $1 and  deleted=0 ORDER BY id ASC",
-      [cs_id]
+      [cs_id],
     );
     return { tableData: rows };
   } catch (error) {
@@ -245,12 +245,12 @@ export const updateReceiptStatus = async (
   cs_id,
   selectedVendorIndex,
   selectedVendorReason,
-  status
+  status,
 ) => {
   try {
     const { rows } = await pool.query(
       "UPDATE receipts SET selectedvendorindex = $1,selectedvendorreason = $2,sentforapproval ='yes',status=$3 where id=$4  RETURNING* ",
-      [selectedVendorIndex, selectedVendorReason, status, cs_id]
+      [selectedVendorIndex, selectedVendorReason, status, cs_id],
     );
     return rows;
   } catch (error) {
@@ -266,7 +266,7 @@ export const AddApprovalStatus = async (
   userId,
   status,
   rejectedby,
-  approverstatus
+  approverstatus,
 ) => {
   try {
     const { rows } = await pool.query(
@@ -283,7 +283,7 @@ export const AddApprovalStatus = async (
         status,
         rejectedby,
         approverstatus,
-      ]
+      ],
     );
     await pool.query("UPDATE receipts SET status=$1 where id=$2", [
       approverstatus,
@@ -320,13 +320,13 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
         `UPDATE tabledata
      SET particulars = $1, qty = $2, vendors = $3, updated = NOW()
      WHERE id = $4`,
-        [item.particulars, item.qty, JSON.stringify(item.vendors), item.id]
+        [item.particulars, item.qty, JSON.stringify(item.vendors), item.id],
       );
     }
 
     const { rows: tableData } = await pool.query(
       `SELECT * FROM tabledata WHERE receipt_id = $1 ORDER BY sl`,
-      [cs_id]
+      [cs_id],
     );
 
     const { rows: formData } = await pool.query(
@@ -369,7 +369,7 @@ export const updatereceipt = async (cs_id, updatedFormData) => {
         filename,
         status,
         sentforapproval,
-      ]
+      ],
     );
 
     return { formData, tableData };
@@ -414,7 +414,7 @@ export const getApproverDetailsByCSId = async (cs_id) => {
        FROM approverdetails
        WHERE cs_id = $1
        ORDER BY timestamp ASC`,
-      [cs_id]
+      [cs_id],
     );
     return rows;
   } catch (error) {
@@ -428,7 +428,7 @@ export const getAllApproverDetails = async () => {
     const { rows } = await pool.query(
       `SELECT *
        FROM approverdetails
-       ORDER BY timestamp ASC`
+       ORDER BY timestamp ASC`,
     );
 
     return rows;
@@ -454,8 +454,25 @@ export const revertrequest = async (cs_id, approvalstatus, status) => {
   try {
     await pool.query(
       "Update receipts set status = $1,sentforapproval=$2  WHERE id = $3",
-      [status, approvalstatus, cs_id]
+      [status, approvalstatus, cs_id],
     );
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getEmailByDept = async (dept) => {
+  let dept_code = null;
+  if (dept.includes("Plant")) {
+    dept_code = 1;
+  } else if (dept.includes("Logistics")) {
+    dept_code = 2;
+  }
+  try {
+    const query = `SELECT email from users WHERE dept_code @> $1::int[]`;
+    const values = [[dept_code]];
+    const { rows } = await pool.query(query, values);
+    return rows;
   } catch (error) {
     throw error;
   }
