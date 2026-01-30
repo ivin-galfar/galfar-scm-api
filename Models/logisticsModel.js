@@ -175,15 +175,25 @@ export const fetchAllCsid = async (module) => {
   }
 };
 
-export const fetchtotalstatements = async (statusfilter, role, searchcs) => {
+export const fetchtotalstatements = async (
+  statusfilter,
+  role,
+  searchcs,
+  fromCron = false,
+) => {
   try {
     let query = " SELECT COUNT(*) FROM log_statements where deleted=0";
     let values = [];
 
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        query += ` AND status LIKE ($${values.length + 1}::text)`;
-        values.push(`%${role.toLowerCase()}`);
+        if (fromCron) {
+          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          values.push(`%pending%`);
+        } else {
+          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          values.push(`%${role.toLowerCase()}`);
+        }
       } else {
         query += ` AND status = ($${values.length + 1})`;
         values.push(statusfilter.toLowerCase());
