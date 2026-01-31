@@ -3,7 +3,6 @@ import { fetchallreceiptslogic } from "../helpers/receiptslogic.js";
 import { NewsletterTemplate } from "../helpers/emailTemplate.js";
 import { fetchtotalstatements } from "../Models/logisticsModel.js";
 export const cronemails = () => {
-  console.log("Current Time:", new Date());
   const statuses = [
     "pending for hod",
     "pending for gm",
@@ -19,19 +18,13 @@ export const cronemails = () => {
     "pending for gm",
     "pending for ceo",
   ];
-  console.log("tes");
-
-  cron.schedule("54 7 * * *", async () => {
+  cron.schedule("10 8 * * *", async () => {
     // Every day at 10:00 AM
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    console.log("coimg");
-
     // Only run if tomorrow is the first day → today is last day of month
     if (tomorrow.getDate() === 1) {
-      console.log("entering");
-
       const totalReceipts = await fetchallreceiptslogic(null, statuses);
       const rejectedreceipts = await fetchallreceiptslogic(
         null,
