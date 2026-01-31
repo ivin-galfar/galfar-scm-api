@@ -82,7 +82,7 @@ export const NewsletterTemplate = async ({
                                     >
                                     <h2 style="margin: 0; color: #111827;">${total}</h2>
                                     <p style="margin: 5px 0 0; color: #6b7280;">
-                                        Total Receipts
+                                        Total Statements
                                     </p>
                                     </td>
 
