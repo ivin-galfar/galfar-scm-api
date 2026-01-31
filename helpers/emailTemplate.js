@@ -27,7 +27,7 @@ export const NewsletterTemplate = async ({
     });
     const mailOptions = {
       from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
-      to: "ivin.prathis@galfaremirates.com",
+      to: toList,
       subject: `Monthly Comparative Statement Statistics - ${currentMonth}  (${dept}) `,
       html: `<!DOCTYPE html>
                 <html>

@@ -469,7 +469,7 @@ export const getEmailByDept = async (dept) => {
     dept_code = 2;
   }
   try {
-    const query = `SELECT email from users WHERE dept_code @> $1::int[]`;
+    const query = `SELECT email from users WHERE dept_code @> $1::int[] AND is_valid = true`;
     const values = [[dept_code]];
     const { rows } = await pool.query(query, values);
     return rows;
