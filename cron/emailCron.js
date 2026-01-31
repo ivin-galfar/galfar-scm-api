@@ -18,17 +18,13 @@ const pendingStatuses = [
   "pending for ceo",
 ];
 export const cronemails = () => {
-  cron.schedule("3 11 * * *", async () => {
-    console.log("1.logging");
-
+  cron.schedule("25 7 * * *", async () => {
     // Every day at 10:00 AM
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
     // Only run if tomorrow is the first day → today is last day of month
     if (tomorrow.getDate() === 1) {
-      console.log("1.entering");
-
       const totalReceipts = await fetchallreceiptslogic(null, statuses);
       const rejectedreceipts = await fetchallreceiptslogic(
         null,

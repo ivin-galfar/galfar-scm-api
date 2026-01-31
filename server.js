@@ -50,7 +50,5 @@ app.use(notFound, errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
-  console.log("Current Time:", new Date());
 });
-
 cronemails();
