@@ -18,8 +18,8 @@ const pendingStatuses = [
   "pending for ceo",
 ];
 export const cronemails = () => {
-  cron.schedule("0 10 * * *", async () => {
-    // Every day at 10:00 AM
+  cron.schedule("0 6 * * *", async () => {
+    // Every day at 10:00 AM (06 in UTC)
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
@@ -48,7 +48,6 @@ export const cronemails = () => {
         null,
         true,
       );
-      console.log(pendinglogstatements);
 
       try {
         const html = await NewsletterTemplate({
