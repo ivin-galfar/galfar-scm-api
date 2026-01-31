@@ -2,26 +2,26 @@ import cron from "node-cron";
 import { fetchallreceiptslogic } from "../helpers/receiptslogic.js";
 import { NewsletterTemplate } from "../helpers/emailTemplate.js";
 import { fetchtotalstatements } from "../Models/logisticsModel.js";
-const statuses = [
-  "pending for hod",
-  "pending for gm",
-  "pending for ceo",
-  "review",
-  "rejected",
-  "approved",
-];
-const rejectedStatuses = ["rejected"];
-const approvedStatuses = ["approved"];
-const pendingStatuses = [
-  "pending for hod",
-  "pending for gm",
-  "pending for ceo",
-];
 export const cronemails = () => {
   console.log("Current Time:", new Date());
+  const statuses = [
+    "pending for hod",
+    "pending for gm",
+    "pending for ceo",
+    "review",
+    "rejected",
+    "approved",
+  ];
+  const rejectedStatuses = ["rejected"];
+  const approvedStatuses = ["approved"];
+  const pendingStatuses = [
+    "pending for hod",
+    "pending for gm",
+    "pending for ceo",
+  ];
   console.log("tes");
 
-  cron.schedule("38 7 * * *", async () => {
+  cron.schedule("54 7 * * *", async () => {
     // Every day at 10:00 AM
     const today = new Date();
     const tomorrow = new Date(today);
@@ -30,6 +30,8 @@ export const cronemails = () => {
 
     // Only run if tomorrow is the first day → today is last day of month
     if (tomorrow.getDate() === 1) {
+      console.log("entering");
+
       const totalReceipts = await fetchallreceiptslogic(null, statuses);
       const rejectedreceipts = await fetchallreceiptslogic(
         null,
