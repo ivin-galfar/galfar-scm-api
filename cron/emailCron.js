@@ -2,23 +2,23 @@ import cron from "node-cron";
 import { fetchallreceiptslogic } from "../helpers/receiptslogic.js";
 import { NewsletterTemplate } from "../helpers/emailTemplate.js";
 import { fetchtotalstatements } from "../Models/logisticsModel.js";
+const statuses = [
+  "pending for hod",
+  "pending for gm",
+  "pending for ceo",
+  "review",
+  "rejected",
+  "approved",
+];
+const rejectedStatuses = ["rejected"];
+const approvedStatuses = ["approved"];
+const pendingStatuses = [
+  "pending for hod",
+  "pending for gm",
+  "pending for ceo",
+];
 export const cronemails = () => {
-  const statuses = [
-    "pending for hod",
-    "pending for gm",
-    "pending for ceo",
-    "review",
-    "rejected",
-    "approved",
-  ];
-  const rejectedStatuses = ["rejected"];
-  const approvedStatuses = ["approved"];
-  const pendingStatuses = [
-    "pending for hod",
-    "pending for gm",
-    "pending for ceo",
-  ];
-  cron.schedule("10 8 * * *", async () => {
+  cron.schedule("12 8 * * *", async () => {
     // Every day at 10:00 AM
     const today = new Date();
     const tomorrow = new Date(today);
