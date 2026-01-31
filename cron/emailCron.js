@@ -18,7 +18,7 @@ const pendingStatuses = [
   "pending for ceo",
 ];
 export const cronemails = () => {
-  cron.schedule("51 10 * * *", async () => {
+  cron.schedule("3 11 * * *", async () => {
     console.log("1.logging");
 
     // Every day at 10:00 AM
