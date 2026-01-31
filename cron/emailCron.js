@@ -19,12 +19,15 @@ const pendingStatuses = [
 ];
 export const cronemails = () => {
   console.log("Current Time:", new Date());
+  console.log("tes");
 
-  cron.schedule("25 7 * * *", async () => {
+  cron.schedule("38 7 * * *", async () => {
     // Every day at 10:00 AM
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
+    console.log("coimg");
+
     // Only run if tomorrow is the first day → today is last day of month
     if (tomorrow.getDate() === 1) {
       const totalReceipts = await fetchallreceiptslogic(null, statuses);
