@@ -8,9 +8,9 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
   password: process.env.PGPASSWORD,
   port: process.env.PGPORT,
-  // ssl: {
-  //   rejectUnauthorized: true, // ensure encryption
-  // },
+  ssl: {
+    rejectUnauthorized: true, // ensure encryption
+  },
 });
 export const connectDB = async () => {
   try {
