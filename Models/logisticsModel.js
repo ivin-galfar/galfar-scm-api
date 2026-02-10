@@ -191,8 +191,13 @@ export const fetchtotalstatements = async (
           query += ` AND status LIKE ($${values.length + 1}::text)`;
           values.push(`%pending%`);
         } else {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
-          values.push(`%${role.toLowerCase()}`);
+          if (role != "initlg") {
+            query += ` AND status LIKE ($${values.length + 1}::text)`;
+            values.push(`%${role.toLowerCase()}`);
+          } else {
+            query += ` AND status LIKE ($${values.length + 1}::text)`;
+            values.push(`%pending%`);
+          }
         }
       } else {
         query += ` AND status = ($${values.length + 1})`;
@@ -228,8 +233,13 @@ export const fetchAllCsidvalues = async (
     let query = "SELECT * FROM log_statements where deleted=0 ";
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        query += ` AND status LIKE ($${values.length + 1}::text)`;
-        values.push(`%${role.toLowerCase()}`);
+        if (role != "initlg") {
+          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          values.push(`%${role.toLowerCase()}`);
+        } else {
+          query += ` AND status LIKE ($${values.length + 1})`;
+          values.push(`%pending%`);
+        }
       } else {
         query += ` AND status = ($${values.length + 1})`;
         values.push(statusfilter.toLowerCase());
