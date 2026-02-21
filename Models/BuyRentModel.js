@@ -1,4 +1,5 @@
 import pool from "../Config/db.js";
+import { expectedStatuses } from "../helpers/plantstatus.js";
 
 export const feedbrstatements = async ({
   formData,
@@ -33,10 +34,10 @@ export const feedbrstatements = async ({
     is_included_op_cost_rent,
     status,
     file,
-    file_name,
+    filename,
     dp_year,
+    currency,
   } = formData;
-  console.log(maintainence_cost_rent);
 
   const { chosentype, benefit } = cashflow;
 
@@ -54,7 +55,7 @@ export const feedbrstatements = async ({
   } = payback;
   try {
     let query =
-      "INSERT INTO buy_rent_statements (item, unit_price, units_no, int_rate, fin_tenure, op_cost_monthly,maintenance_yearly,tenure_months, principal_cost, monthly_installment, total_interest_cost, op_cost_tenure,maintenance_cost_tenure, principal_with_interest_buy,cash_outflow_buying,monthly_rent,total_monthly_rental,total_rental_cost,maint_rental,op_cost_rental,cash_outflow_renting,dp_rate,chosentype,benefit,depreciation_cost,total_expenses_buying,total_expenses_rentals,accounting_gain_loss,cost_in_buying_without_main,cost_in_buying_with_main,period_months_without_main,period_months_with_main,included_op_cost_rent,included_maintain_cost_rent,status,file,file_name,dp_year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) RETURNING *";
+      "INSERT INTO buy_rent_statements (item, unit_price, units_no, int_rate, fin_tenure, op_cost_monthly,maintenance_yearly,tenure_months, principal_cost, monthly_installment, total_interest_cost, op_cost_tenure,maintenance_cost_tenure, principal_with_interest_buy,cash_outflow_buying,monthly_rent,total_monthly_rental,total_rental_cost,maint_rental,op_cost_rental,cash_outflow_renting,dp_rate,chosentype,benefit,depreciation_cost,total_expenses_buying,total_expenses_rentals,accounting_gain_loss,cost_in_buying_without_main,cost_in_buying_with_main,period_months_without_main,period_months_with_main,included_op_cost_rent,included_maintain_cost_rent,status,file,filename,dp_year,currency) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) RETURNING *";
     let params = [
       item,
       unit_price,
@@ -92,16 +93,15 @@ export const feedbrstatements = async ({
       is_included_maintain_cost_rent,
       status,
       file,
-      file_name,
+      filename,
       dp_year,
+      currency,
     ];
 
     const { rows } = await pool.query(query, params);
 
     return rows[0];
   } catch (error) {
-    console.log(error);
-
     throw error;
   }
 };
@@ -109,32 +109,77 @@ export const feedbrstatements = async ({
 export const fetchBrStatements = async (
   module,
   role,
-  statusfilter,
-  fromCron = false,
+  statusfilter = "All",
+  page,
+  limit,
+  searchcs,
 ) => {
+  let pendingCondition = "";
+  let last7DaysResult = [];
+  if (role === "ceo") pendingCondition = "status = 'pending for ceo'";
+  if (role === "gm") pendingCondition = "status = 'pending for gm'";
+  if (role === "hod") pendingCondition = "status = 'pending for hod'";
+  if (role === "fm") pendingCondition = "status = 'pending for fm'";
+
+  // initbr → ALL pending
+  if (role === "initbr") pendingCondition = "status LIKE 'pending%'";
   try {
+    const offset = page * limit;
     let columns = ["id"];
     if (module == "/dashboardbr") {
-      columns.push("item", "chosentype", "status", "approver_info");
+      columns.push(
+        "item",
+        "chosentype",
+        "status",
+        "approver_info",
+        "created_at",
+      );
     }
 
     const selectColumns = columns.join(",");
-
-    let query = `
-      SELECT ${selectColumns}
-      FROM buy_rent_statements
-      WHERE deleted = 0
-    `;
+    let query = "";
+    if (module != "/") {
+      query = `
+        SELECT ${selectColumns}
+        FROM buy_rent_statements
+        WHERE deleted = 0
+      `;
+    } else {
+      query = `
+          SELECT
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved_count,
+            SUM(
+              CASE 
+                WHEN ${pendingCondition}
+                THEN 1 ELSE 0
+              END
+            ) AS pending_count,
+            SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count,
+            SUM(CASE WHEN status = 'review' THEN 1 ELSE 0 END) AS review_count
+          FROM buy_rent_statements
+          WHERE deleted = 0`;
+      let last7DaysQuery = `
+            SELECT 
+              item,created_at,status
+            FROM buy_rent_statements
+            WHERE deleted = 0
+            AND created_at >= NOW() - INTERVAL '7 days'
+            ORDER BY created_at DESC`;
+      const result = await pool.query(last7DaysQuery);
+      last7DaysResult = result.rows;
+    }
 
     let values = [];
     if (role !== "initbr") {
       query += `
     AND status IS NOT NULL
-    AND status <> 'created'`;
+    AND status <> 'created'
+    AND status <> 'reverted'`;
     }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        if (fromCron) {
+        if (role == "initbr") {
           query += ` AND status LIKE ($${values.length + 1}::text)`;
           values.push(`%pending%`);
         } else {
@@ -146,10 +191,68 @@ export const fetchBrStatements = async (
         values.push(statusfilter.toLowerCase());
       }
     }
+    if (searchcs) {
+      query += ` AND id::text LIKE ($${values.length + 1})`;
+      values.push(`%${searchcs}%`);
+    }
 
-    query += "  order by id desc";
+    if (module == "/dashboardbr") {
+      query += ` ORDER BY id Desc LIMIT $${values.length + 1} OFFSET $${
+        values.length + 2
+      }`;
+      values.push(limit, offset);
+    } else if (module !== "/") {
+      query += ` ORDER BY id Desc LIMIT 50`;
+    }
     const { rows } = await pool.query(query, values);
-    return rows;
+
+    return { rows, last7DaysResult };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchtotalBrStatements = async (
+  module,
+  role,
+  statusfilter,
+  searchcs,
+  fromCron = false,
+) => {
+  try {
+    let query = `
+      SELECT COUNT(*) as total
+      FROM buy_rent_statements
+      WHERE deleted = 0
+    `;
+
+    let values = [];
+    if (role !== "initbr") {
+      query += `
+    AND status IS NOT NULL
+    AND status <> 'created'
+     AND status <> 'reverted'`;
+    }
+    if (statusfilter != "All") {
+      if (statusfilter == "Pending") {
+        if (role == "initbr") {
+          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          values.push(`%pending%`);
+        } else {
+          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          values.push(`%${role.toLowerCase()}`);
+        }
+      } else {
+        query += ` AND status = ($${values.length + 1})`;
+        values.push(statusfilter.toLowerCase());
+      }
+    }
+    if (searchcs) {
+      query += ` AND id::text LIKE ($${values.length + 1})`;
+      values.push(`%${searchcs}%`);
+    }
+    const { rows } = await pool.query(query, values);
+    return rows[0];
   } catch (error) {
     throw error;
   }
@@ -165,7 +268,14 @@ export const fetchBrStatement = async (cs_id) => {
     throw error;
   }
 };
-export const updateStatements = async (cs_id, status, comments, role) => {
+export const updateStatements = async (
+  cs_id,
+  status,
+  comments,
+  role,
+  file,
+  filename,
+) => {
   try {
     let setClauses = [];
     let values = [];
@@ -180,23 +290,44 @@ export const updateStatements = async (cs_id, status, comments, role) => {
       values.push("yes");
       paramIndex++;
     }
+    let currentstatus = "";
+    let nextstatus = expectedStatuses(role);
 
-    if (comments && comments.trim() !== "") {
+    if (status != "review") {
+      if (nextstatus == status && status != "pending for hod") {
+        currentstatus = "approved";
+      } else if (status == "pending for hod") {
+        currentstatus = "created";
+      } else if (status == "rejected") {
+        currentstatus = "rejected";
+      } else {
+        currentstatus = status;
+      }
+    }
+
+    if (file != null || filename != null) {
+      setClauses.push(`file = $${paramIndex}`);
+      values.push(file && file.length ? file : []);
+      paramIndex++;
+      setClauses.push(`filename = $${paramIndex}`);
+      values.push(filename && filename.length ? filename : []);
+      paramIndex++;
+    }
+
+    if (status) {
       const approvalData = {
-        comment: comments,
+        ...(comments ? { comment: comments } : {}),
         date: new Date().toISOString(),
+        role: role,
+        status: currentstatus != "" ? currentstatus : status,
+        ...(status === "rejected" && { rejectedBy: role }),
       };
 
       setClauses.push(`
-        approver_info = jsonb_set(
-          COALESCE(approver_info, '{}'),
-          '{${role}}',
-          $${paramIndex}::jsonb,
-          true
-        )
+        approver_info = COALESCE(approver_info, '[]'::jsonb) || $${paramIndex}::jsonb
       `);
 
-      values.push(JSON.stringify(approvalData));
+      values.push(JSON.stringify([approvalData]));
       paramIndex++;
     }
 
@@ -216,6 +347,20 @@ export const updateStatements = async (cs_id, status, comments, role) => {
   }
 };
 
+// export const updateBrImages = async (tablebrdata, cs_id) => {
+//   try {
+//     let query =
+//       "Update buy_rent_statements SET file=$1, filename=$2 WHERE id = $3 returning *";
+//     let values = [tablebrdata.file, tablebrdata.filename, cs_id];
+//     console.log(query);
+//     console.log(values);
+
+//     const { rows } = await pool.query(query, values);
+//     return rows;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
 export const updateBrValues = async (
   cs_id,
   formData,
@@ -250,8 +395,9 @@ export const updateBrValues = async (
     is_included_op_cost_rent,
     status,
     file,
-    file_name,
+    filename,
     dp_year,
+    currency,
   } = formData;
 
   const { chosentype, benefit } = cashflow;
@@ -310,9 +456,10 @@ export const updateBrValues = async (
         included_maintain_cost_rent = $34,
         status = $35,
         file = $36,
-        file_name = $37,
-        dp_year = $38
-      WHERE id = $39
+        filename = $37,
+        dp_year = $38,
+        currency = $39
+      WHERE id = $40
       RETURNING *
     `;
 
@@ -353,18 +500,29 @@ export const updateBrValues = async (
       is_included_op_cost_rent,
       status,
       file,
-      file_name,
+      filename,
       dp_year,
+      currency,
       cs_id,
     ];
-    // console.log(query);
-
-    // console.log(values);
 
     const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
     console.log(error);
+    throw error;
+  }
+};
+
+export const updateDeleteFlag = async (cs_id) => {
+  try {
+    await pool.query(
+      "Update buy_rent_statements set deleted = 1 WHERE id = $1",
+      [cs_id],
+    );
+    return { message: "Statement removed successfully" };
+  } catch (error) {
+    console.error("Error removing statement:", error);
     throw error;
   }
 };

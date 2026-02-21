@@ -2,7 +2,9 @@ import {
   feedbrstatements,
   fetchBrStatement,
   fetchBrStatements,
+  fetchtotalBrStatements,
   updateBrValues,
+  updateDeleteFlag,
   updateStatements,
 } from "../Models/BuyRentModel.js";
 
@@ -22,10 +24,9 @@ export const AddBuyRentStatements = async (req, res) => {
     is_included_maintain_cost_rent,
     is_included_op_cost_rent,
   } = req.body.formData;
-  console.log(op_cost_rent);
 
   for (const [key, value] of Object.entries(formData)) {
-    if (key === "file" || key === "file_name") continue;
+    if (key === "file" || key === "filename") continue;
     if (
       value === "" ||
       value === null ||
@@ -113,7 +114,7 @@ export const AddBuyRentStatements = async (req, res) => {
   let cashflow = {};
   cashflow.chosentype =
     formData.cash_outflow_renting > formData.cash_outflow_buying
-      ? " Buying"
+      ? "Buying"
       : "Renting";
   cashflow.benefit =
     formData.cash_outflow_renting > formData.cash_outflow_buying
@@ -143,9 +144,13 @@ export const AddBuyRentStatements = async (req, res) => {
 
   payback.cost_in_buying_with_main = formData.cash_outflow_buying;
   payback.period_months_without_main =
-    payback.cost_in_buying_without_main / formData.total_monthly_rental;
+    formData.total_monthly_rental > 0
+      ? payback.cost_in_buying_without_main / formData.total_monthly_rental
+      : null;
   payback.period_months_with_main =
-    payback.cost_in_buying_with_main / formData.total_monthly_rental;
+    formData.total_monthly_rental > 0
+      ? payback.cost_in_buying_with_main / formData.total_monthly_rental
+      : null;
 
   try {
     const feedstatement = await feedbrstatements({
@@ -163,10 +168,35 @@ export const AddBuyRentStatements = async (req, res) => {
 };
 
 export const fetchBuyRentStatements = async (req, res) => {
-  const { module, role, statusfilter } = req.query;
+  const { module, role, statusfilter, page, limit, searchcs } = req.query;
+
   try {
-    const Brstatements = await fetchBrStatements(module, role, statusfilter);
+    const Brstatements = await fetchBrStatements(
+      module,
+      role,
+      statusfilter,
+      page,
+      limit,
+      searchcs,
+    );
+
     return res.status(200).json(Brstatements);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const fetchBuyRentTotalStatements = async (req, res) => {
+  const { module, role, statusfilter, searchcs } = req.query;
+  try {
+    const count = await fetchtotalBrStatements(
+      module,
+      role,
+      statusfilter,
+      searchcs,
+    );
+    return res.status(200).json(count);
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error.message });
@@ -186,7 +216,7 @@ export const fetchBuyRentStatement = async (req, res) => {
 
 export const updateBuyRentStatement = async (req, res) => {
   const { cs_id } = req.params;
-  const { status, comments, role } = req.body;
+  const { status, comments, role, file, filename } = req.body;
 
   try {
     const UpdatedBrStatements = await updateStatements(
@@ -194,10 +224,13 @@ export const updateBuyRentStatement = async (req, res) => {
       status,
       comments,
       role,
+      file,
+      filename,
     );
     return res.status(200).json(UpdatedBrStatements);
   } catch (error) {
     console.log(error);
+
     res.status(500).json({ error: error.message });
   }
 };
@@ -221,7 +254,7 @@ export const updateBuyRentStatementValues = async (req, res) => {
     is_included_op_cost_rent,
   } = req.body.formData;
   for (const [key, value] of Object.entries(formData)) {
-    if (key === "file" || key === "file_name") continue;
+    if (key === "file" || key === "filename") continue;
     if (
       value === "" ||
       value === null ||
@@ -308,7 +341,7 @@ export const updateBuyRentStatementValues = async (req, res) => {
   let cashflow = {};
   cashflow.chosentype =
     formData.cash_outflow_renting > formData.cash_outflow_buying
-      ? " Buying"
+      ? "Buying"
       : "Renting";
   cashflow.benefit =
     formData.cash_outflow_renting > formData.cash_outflow_buying
@@ -337,10 +370,14 @@ export const updateBuyRentStatementValues = async (req, res) => {
     formData.principal_with_interest_buy + formData.op_cost_tenure;
 
   payback.cost_in_buying_with_main = formData.cash_outflow_buying;
-  payback.period_months_without_main =
-    payback.cost_in_buying_without_main / formData.total_monthly_rental;
   payback.period_months_with_main =
-    payback.cost_in_buying_with_main / formData.total_monthly_rental;
+    formData.total_monthly_rental > 0
+      ? payback.cost_in_buying_with_main / formData.total_monthly_rental
+      : null;
+  payback.period_months_with_main =
+    formData.total_monthly_rental > 0
+      ? payback.cost_in_buying_with_main / formData.total_monthly_rental
+      : null;
 
   try {
     const updatedStatementValues = await updateBrValues(
@@ -353,5 +390,23 @@ export const updateBuyRentStatementValues = async (req, res) => {
     return res.status(200).json(updatedStatementValues);
   } catch (error) {
     console.log(error);
+
+    throw error;
+  }
+};
+
+export const softdeletebrstatement = async (req, res) => {
+  const { cs_id } = req.params;
+
+  const Brstatements = await fetchBrStatement(cs_id);
+
+  if (Brstatements?.length == 0) {
+    return res.status(404).json({ error: "Statement not found" });
+  }
+  try {
+    const deletedstatement = await updateDeleteFlag(cs_id);
+    return res.status(200).json(deletedstatement);
+  } catch (error) {
+    return res.status(500).json(error);
   }
 };

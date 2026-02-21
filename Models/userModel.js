@@ -8,7 +8,7 @@ export const addUser = async (
   role,
   deptcode,
   pr_code,
-  createdAt
+  createdAt,
 ) => {
   const hashedPassword = await Hashpassword(password);
 
