@@ -245,7 +245,7 @@ export const EmailNotify = async (req, res) => {
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : status == "review"
               ? "Under Review"
-              : "Approval"
+              : "Approval Required"
         }:${item} (${new Date(date)
           .toLocaleDateString("en-AE", {
             timeZone: "Asia/Dubai",
@@ -438,7 +438,7 @@ export const EmailNotify = async (req, res) => {
         subject: `Comparative Statement - ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval"
+            : "Approval Required"
         }`,
         html: `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
