@@ -8,7 +8,7 @@ export const addUser = async (
   role,
   deptcode,
   pr_code,
-  createdAt
+  createdAt,
 ) => {
   const hashedPassword = await Hashpassword(password);
 
@@ -29,7 +29,7 @@ export const addUser = async (
 
     return rows[0];
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 

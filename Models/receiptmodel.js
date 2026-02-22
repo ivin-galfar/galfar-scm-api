@@ -291,7 +291,7 @@ export const AddApprovalStatus = async (
     ]);
     return rows;
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 export const updatereceipt = async (cs_id, updatedFormData) => {

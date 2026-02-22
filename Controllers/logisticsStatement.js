@@ -76,8 +76,6 @@ export const UpdatelogisticsStatement = async (req, res) => {
     });
     return res.status(200).json(feedstatement);
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: error.message });
   }
 };
@@ -130,8 +128,6 @@ export const fetchCscount = async (req, res) => {
 
     return res.status(200).json({ receipts_count: count });
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -171,8 +167,6 @@ export const updateCS = async (req, res) => {
 
     return res.status(200).json({ message: "Successfully Updated" });
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: error.message });
   }
 };

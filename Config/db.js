@@ -17,7 +17,7 @@ export const connectDB = async () => {
     const res = await pool.query("SELECT NOW()");
     console.log(
       "✅ PostgreSQL connected successfully! Server time:",
-      res.rows[0].now
+      res.rows[0].now,
     );
   } catch (error) {
     console.error("❌ PostgreSQL connection failed:", error);
