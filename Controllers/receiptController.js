@@ -64,8 +64,6 @@ export const feedReceipts = async (req, res) => {
       .status(201)
       .json({ message: "Receipt saved successfully", receipt: newReceipt });
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: error });
   }
 };

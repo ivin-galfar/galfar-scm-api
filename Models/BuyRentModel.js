@@ -347,20 +347,6 @@ export const updateStatements = async (
   }
 };
 
-// export const updateBrImages = async (tablebrdata, cs_id) => {
-//   try {
-//     let query =
-//       "Update buy_rent_statements SET file=$1, filename=$2 WHERE id = $3 returning *";
-//     let values = [tablebrdata.file, tablebrdata.filename, cs_id];
-//     console.log(query);
-//     console.log(values);
-
-//     const { rows } = await pool.query(query, values);
-//     return rows;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
 export const updateBrValues = async (
   cs_id,
   formData,
@@ -509,7 +495,6 @@ export const updateBrValues = async (
     const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 };

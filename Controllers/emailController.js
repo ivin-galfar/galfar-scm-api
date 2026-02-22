@@ -48,7 +48,6 @@ export const EmailNotify = async (req, res) => {
       gm: "fm",
       fm: "ceo",
     };
-    // console.log(status);
 
     let nextRole = "";
     if (["approved", "rejected"].includes(status)) {

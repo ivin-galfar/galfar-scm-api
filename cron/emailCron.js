@@ -65,7 +65,7 @@ export const cronemails = () => {
           dept: "Logistics",
         });
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     }
   });

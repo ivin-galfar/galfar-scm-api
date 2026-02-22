@@ -161,8 +161,6 @@ export const AddBuyRentStatements = async (req, res) => {
     });
     return res.status(200).json(feedstatement);
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: error.message });
   }
 };
@@ -182,7 +180,6 @@ export const fetchBuyRentStatements = async (req, res) => {
 
     return res.status(200).json(Brstatements);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -198,7 +195,6 @@ export const fetchBuyRentTotalStatements = async (req, res) => {
     );
     return res.status(200).json(count);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -209,7 +205,6 @@ export const fetchBuyRentStatement = async (req, res) => {
     const Brstatements = await fetchBrStatement(cs_id);
     return res.status(200).json(Brstatements);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -229,7 +224,6 @@ export const updateBuyRentStatement = async (req, res) => {
     );
     return res.status(200).json(UpdatedBrStatements);
   } catch (error) {
-    console.log(error);
 
     res.status(500).json({ error: error.message });
   }
@@ -389,7 +383,6 @@ export const updateBuyRentStatementValues = async (req, res) => {
     );
     return res.status(200).json(updatedStatementValues);
   } catch (error) {
-    console.log(error);
 
     throw error;
   }
