@@ -224,7 +224,6 @@ export const updateBuyRentStatement = async (req, res) => {
     );
     return res.status(200).json(UpdatedBrStatements);
   } catch (error) {
-
     res.status(500).json({ error: error.message });
   }
 };
@@ -383,7 +382,6 @@ export const updateBuyRentStatementValues = async (req, res) => {
     );
     return res.status(200).json(updatedStatementValues);
   } catch (error) {
-
     throw error;
   }
 };

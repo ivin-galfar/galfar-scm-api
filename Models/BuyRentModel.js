@@ -229,7 +229,7 @@ export const fetchtotalBrStatements = async (
     `;
 
     let values = [];
-    if (role !== "initbr" || role == "inita") {
+    if (role !== "initbr" && role !== "inita") {
       query += `
     AND status IS NOT NULL
     AND status <> 'created'
