@@ -205,8 +205,6 @@ export const fetchBrStatements = async (
     } else if (module !== "/") {
       query += ` ORDER BY id Desc LIMIT 50`;
     }
-    console.log(query);
-    console.log(values);
 
     const { rows } = await pool.query(query, values);
 
