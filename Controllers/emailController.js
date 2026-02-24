@@ -456,7 +456,7 @@ export const EmailNotify = async (req, res) => {
                 font-family:Arial, sans-serif;">
         Comparative Statement -
         ${
-          nextRole === "InitH" || nextRole === "inita"
+          nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
         }
@@ -470,7 +470,7 @@ export const EmailNotify = async (req, res) => {
       <!--[if !mso]><!-- -->
       <div style="background-color: #004080; padding: 16px 24px;">
         <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
-          nextRole === "InitH" || nextRole === "inita"
+          nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
         }</h2>
