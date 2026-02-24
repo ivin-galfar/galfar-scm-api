@@ -1,6 +1,6 @@
 export const expectedStatuses = (currentrole) => {
   let statustext = "";
-  if (currentrole == "initbr") {
+  if (currentrole == "inita") {
     statustext = "pending for hod";
   } else if (currentrole == "hod") {
     statustext = "pending for fm";

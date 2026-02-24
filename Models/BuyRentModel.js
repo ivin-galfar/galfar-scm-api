@@ -121,9 +121,7 @@ export const fetchBrStatements = async (
   if (role === "hod") pendingCondition = "status = 'pending for hod'";
   if (role === "fm") pendingCondition = "status = 'pending for fm'";
 
-  // initbr → ALL pending
-  if (role === "initbr" || role == "inita")
-    pendingCondition = "status LIKE 'pending%'";
+  if (role == "inita") pendingCondition = "status LIKE 'pending%'";
   try {
     const offset = page * limit;
     let columns = ["id"];
@@ -172,7 +170,7 @@ export const fetchBrStatements = async (
     }
 
     let values = [];
-    if (role !== "initbr" && role !== "inita") {
+    if (role !== "inita") {
       query += `
     AND status IS NOT NULL
     AND status <> 'created'
@@ -180,7 +178,7 @@ export const fetchBrStatements = async (
     }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        if (role == "initbr" || role == "inita") {
+        if (role == "inita") {
           query += ` AND status LIKE ($${values.length + 1}::text)`;
           values.push(`%pending%`);
         } else {
@@ -229,7 +227,7 @@ export const fetchtotalBrStatements = async (
     `;
 
     let values = [];
-    if (role !== "initbr" && role !== "inita") {
+    if (role !== "inita") {
       query += `
     AND status IS NOT NULL
     AND status <> 'created'
@@ -237,7 +235,7 @@ export const fetchtotalBrStatements = async (
     }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        if (role == "initbr" || role == "inita") {
+        if (role == "inita") {
           query += ` AND status LIKE ($${values.length + 1}::text)`;
           values.push(`%pending%`);
         } else {

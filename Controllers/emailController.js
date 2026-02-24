@@ -87,7 +87,7 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
-        subject: `Comparative Statement - ${
+        subject: `Comparative Statement (Logistics) - ${
           nextRole === "initlg"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval"
@@ -210,7 +210,7 @@ export const EmailNotify = async (req, res) => {
     const { role } = req.body.userInfo;
 
     const nextRoleMap = {
-      initbr: "hod",
+      inita: "hod",
       hod: "fm",
       fm: "gm",
       gm: "ceo",
@@ -218,7 +218,7 @@ export const EmailNotify = async (req, res) => {
 
     let nextRole = "";
     if (["approved", "rejected", "review"].includes(status)) {
-      nextRole = "initbr";
+      nextRole = "inita";
     } else {
       nextRole = nextRoleMap[role];
     }
@@ -239,8 +239,8 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
-        subject: `Comparative Statement - ${
-          nextRole === "initbr"
+        subject: `Comparative Statement (BVR) - ${
+          nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : status == "review"
               ? "Under Review"
@@ -267,7 +267,7 @@ export const EmailNotify = async (req, res) => {
                         font-family:Arial, sans-serif;">
                 Comparative Statement -
                 ${
-                  nextRole === "initbr"
+                  nextRole === "inita"
                     ? status.charAt(0).toUpperCase() +
                       status.slice(1).toLowerCase()
                     : "Approval Required"
@@ -281,7 +281,7 @@ export const EmailNotify = async (req, res) => {
       <!--[if !mso]><!-- -->
       <div style="background-color: #004080; padding: 16px 24px;">
         <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
-          nextRole === "initbr"
+          nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
         }</h2>
@@ -434,7 +434,7 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
-        subject: `Comparative Statement - ${
+        subject: `Comparative Statement  ${type}- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
