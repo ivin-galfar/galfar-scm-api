@@ -46,14 +46,32 @@ export const feedlogisticsStatement = async ({ formData, tableData }) => {
     const receipts = rows[0];
     const insertedItems = [];
 
+    let formatted = "";
     if (tableData && tableData.length > 0) {
       for (const data of tableData) {
+        formatted = data.forwarders;
+        if (data.particulars == "DOOR TO DOOR COST") {
+          formatted = Object.fromEntries(
+            Object.entries(data.forwarders || {}).map(([key, value]) => {
+              const currencyMatch = String(value).match(/[A-Za-z]+/);
+              const currency = currencyMatch ? currencyMatch[0] : "";
+
+              const cleaned = String(value).replace(/[^\d.-]/g, "");
+              const num = Number(cleaned);
+
+              const formattedValue = Number.isFinite(num)
+                ? `${currency} ${num.toFixed(2)}`.trim()
+                : `${currency} 0.00`.trim();
+              return [key, formattedValue];
+            }),
+          );
+        }
         let query =
           "INSERT INTO forwarder_records (cs_id,particulars,forwarders,vendorcol,row_id)  VALUES($1,$2,$3,$4,$5) RETURNING *";
         let params = [
           receipts.id,
           data.particulars,
-          data.forwarders,
+          formatted,
           Object.values(data.vendorcol),
           data.r_id,
         ];
