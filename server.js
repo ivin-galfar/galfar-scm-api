@@ -9,6 +9,7 @@ import EmailRoutes from "./Routes/EmailRoutes.js";
 import DepartmentRoutes from "./Routes/DepartmentRoutes.js";
 import LogisticsRoutes from "./Routes/LogisticsRoutes.js";
 import BRRoutes from "./Routes/BuyRentRoutes.js";
+import FNRoutes from "./Routes/FileNoteRoutes.js";
 import verifyToken from "./Utils/jwtTokenValidation.js";
 import { cronemails } from "./cron/emailCron.js";
 dotenv.config();
@@ -44,6 +45,7 @@ app.use("/emailnotify", verifyToken, EmailRoutes);
 app.use("/department", verifyToken, DepartmentRoutes);
 app.use("/logistics", verifyToken, LogisticsRoutes);
 app.use("/brstatement", verifyToken, BRRoutes);
+app.use("/filenote", verifyToken, FNRoutes);
 
 app.get("/", (req, res) => res.send("API is running"));
 

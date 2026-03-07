@@ -179,7 +179,7 @@ export const totalReceipts = async (
       query += ` AND LOWER(status) = ANY($${values.length + 1})`;
       values.push(multiStatusfilter);
     } else {
-      let updatedStatus = Statuses.map((s) => s.trim());
+      let updatedStatus = Statuses?.map((s) => s.trim());
       query += ` AND ($${
         values.length + 1
       }::text[] IS NULL OR COALESCE(LOWER(status), '') = ANY($${
