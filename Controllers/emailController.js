@@ -369,7 +369,7 @@ export const EmailNotify = async (req, res) => {
     }
   } else {
     const { projectvalue, hiringname, type } = req.body.formData;
-    const { role } = req.body.userInfo;
+    const role = req.body.userInfo.role[0];
     const { status } = req.body;
     const { cs_id } = req.params;
 

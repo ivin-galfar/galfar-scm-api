@@ -44,7 +44,8 @@ export const getEmailsByRole = async (role) => {
   if (!role || typeof role !== "string") {
     throw new Error("Invalid role provided");
   }
-  const query = "SELECT email FROM users WHERE role = $1 AND is_valid = true";
+  const query =
+    "SELECT email FROM users WHERE $1 = ANY(role) AND is_valid = true";
   const params = [role];
   const result = await pool.query(query, params);
   return result.rows.map((r) => r.email);
