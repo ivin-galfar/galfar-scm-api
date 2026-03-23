@@ -434,7 +434,7 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
-        subject: `Comparative Statement  ${type}- ${
+        subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
