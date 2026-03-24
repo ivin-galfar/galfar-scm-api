@@ -13,6 +13,7 @@ This project features a **⚛️ React frontend** styled with **🎨 Tailwind CS
 - 👥 Role-based access and user management  
 - 📱 Responsive design optimized for desktop and mobile  
 - ⚙️ Scalable REST API backend
+- 📧 Automated Email Cron: Sends monthly emails to respective department users with the current status of last month’s statements.
 
 ---
 
