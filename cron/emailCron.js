@@ -21,27 +21,59 @@ export const cronemails = () => {
   cron.schedule("0 6 * * *", async () => {
     // Every day at 10:00 AM (06 in UTC)
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    // Only run if tomorrow is the first day → today is last day of month
-    if (tomorrow.getDate() === 1) {
-      const totalReceipts = await fetchallreceiptslogic(null, statuses);
+    // Only run if today is the first day of the month
+    if (today.getDate() === 1) {
+      const totalReceipts = await fetchallreceiptslogic(
+        null,
+        statuses,
+        null,
+        null,
+        null,
+        true,
+      );
       const rejectedreceipts = await fetchallreceiptslogic(
         null,
         rejectedStatuses,
+        null,
+        null,
+        null,
+        true,
       );
       const approvedReceipts = await fetchallreceiptslogic(
         null,
         approvedStatuses,
+        null,
+        null,
+        null,
+        true,
       );
       const pendingReceipts = await fetchallreceiptslogic(
         null,
         pendingStatuses,
+        null,
+        null,
+        null,
+        true,
       );
 
-      const totallogstatements = await fetchtotalstatements("All");
-      const rejectedlogstatements = await fetchtotalstatements("rejected");
-      const approvedlogstatements = await fetchtotalstatements("approved");
+      const totallogstatements = await fetchtotalstatements(
+        "All",
+        null,
+        null,
+        true,
+      );
+      const rejectedlogstatements = await fetchtotalstatements(
+        "rejected",
+        null,
+        null,
+        true,
+      );
+      const approvedlogstatements = await fetchtotalstatements(
+        "approved",
+        null,
+        null,
+        true,
+      );
       const pendinglogstatements = await fetchtotalstatements(
         "Pending",
         null,

@@ -163,6 +163,7 @@ export const totalReceipts = async (
   statusfilter,
   multiStatusfilter,
   searchcs,
+  emailcron = false,
 ) => {
   try {
     let query = `Select count(*) from receipts  where deleted=0  `;
@@ -179,7 +180,7 @@ export const totalReceipts = async (
       query += ` AND LOWER(status) = ANY($${values.length + 1})`;
       values.push(multiStatusfilter);
     } else {
-      let updatedStatus = Statuses.map((s) => s.trim());
+      let updatedStatus = Statuses?.map((s) => s.trim());
       query += ` AND ($${
         values.length + 1
       }::text[] IS NULL OR COALESCE(LOWER(status), '') = ANY($${
@@ -197,6 +198,11 @@ export const totalReceipts = async (
       query += ` AND status = ($${values.length + 1})`;
       values.push(statusfilter);
     }
+    if (emailcron) {
+      query += ` AND created_at >= date_trunc('month', CURRENT_DATE)
+             AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'`;
+    }
+    console.log(query);
 
     const { rows } = await pool.query(query, values);
     return rows[0];

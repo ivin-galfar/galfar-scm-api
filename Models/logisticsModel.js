@@ -197,7 +197,7 @@ export const fetchtotalstatements = async (
   statusfilter,
   role,
   searchcs,
-  fromCron = false,
+  emailcron = false,
 ) => {
   try {
     let query = " SELECT COUNT(*) FROM log_statements where deleted=0";
@@ -205,7 +205,7 @@ export const fetchtotalstatements = async (
 
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        if (fromCron) {
+        if (emailcron) {
           query += ` AND status LIKE ($${values.length + 1}::text)`;
           values.push(`%pending%`);
         } else {
@@ -229,7 +229,10 @@ export const fetchtotalstatements = async (
     if (role != "initlg") {
       query += ` AND status != 'created' AND status IS NOT NULL`;
     }
-
+    if (emailcron) {
+      query += ` AND created_at >= date_trunc('month', CURRENT_DATE)
+             AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'`;
+    }
     const { rows } = await pool.query(query, values);
     return rows[0];
   } catch (error) {

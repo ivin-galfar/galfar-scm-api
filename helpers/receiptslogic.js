@@ -6,6 +6,7 @@ export const fetchallreceiptslogic = async (
   statusfilter,
   multiStatus,
   searchcs,
+  emailcron = false,
 ) => {
   let statuses = [];
   if (typeof expectedStatuses === "string") {
@@ -25,6 +26,7 @@ export const fetchallreceiptslogic = async (
     statusfilter,
     multiStatuses,
     searchcs,
+    emailcron,
   );
 
   return count;
