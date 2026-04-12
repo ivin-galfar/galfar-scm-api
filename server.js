@@ -6,6 +6,7 @@ import userRoutes from "./Routes/userRoutes.js";
 import ParticularRoutes from "./Routes/ParticularRoutes.js";
 import ReceiptRoutes from "./Routes/ReceiptRoutes.js";
 import EmailRoutes from "./Routes/EmailRoutes.js";
+import ProjectRoutes from "./Routes/ProjectRoutes.js";
 import DepartmentRoutes from "./Routes/DepartmentRoutes.js";
 import LogisticsRoutes from "./Routes/LogisticsRoutes.js";
 import BRRoutes from "./Routes/BuyRentRoutes.js";
@@ -46,6 +47,7 @@ app.use("/department", verifyToken, DepartmentRoutes);
 app.use("/logistics", verifyToken, LogisticsRoutes);
 app.use("/brstatement", verifyToken, BRRoutes);
 app.use("/filenote", verifyToken, FNRoutes);
+app.use("/projects", verifyToken, ProjectRoutes);
 
 app.get("/", (req, res) => res.send("API is running"));
 

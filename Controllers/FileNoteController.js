@@ -4,11 +4,20 @@ import {
   lastfnid,
   onefilenote,
   updatefilenote,
+  softdeletefn,
 } from "../Models/FileNoteModel.js";
 
 export const AddFileNotes = async (req, res) => {
-  const { name, content, dept_id, type, category, file_names, file_urls } =
-    req.body;
+  const {
+    name,
+    content,
+    dept_id,
+    type,
+    category,
+    file_names,
+    file_urls,
+    project,
+  } = req.body;
 
   try {
     const filenote = await insertFileNotes({
@@ -19,29 +28,41 @@ export const AddFileNotes = async (req, res) => {
       category,
       file_names,
       file_urls,
+      project,
     });
     return res.status(200).json(filenote);
   } catch (error) {
-    throw error;
+    console.error("AddFileNotes Error:", error.message);
+    console.error("Error Details:", error);
+    return res
+      .status(500)
+      .json({ error: error.message, details: error.detail });
   }
 };
 
 export const fetchfnids = async (req, res) => {
-  const { module, dept_id, statusfilter, page, limit, searchcs } = req.query;
+  const { module, statusfilter, page, limit, searchcs, count } = req.query;
+  const project_code = req.query["project_code[]"];
   const roles = req.query?.role.split(",");
+
+  const department_id = req.query?.dept_id.split(",");
   const isadmin = req.query.isadmin === "true";
-  const updatedRoles = roles.filter((r) => r !== "initfn")[0];
+  let updatedRoles = roles.filter((r) => r !== "initfn")[0];
+  // if (!roles.includes("initpr"))
+  //   updatedRoles = roles.filter((r) => r == "initfn")[0];
 
   try {
     const fnotes = await filenote(
       module,
-      dept_id,
+      department_id,
       updatedRoles,
       isadmin,
+      project_code,
       statusfilter,
       page,
       limit,
       searchcs,
+      count,
     );
 
     return res.status(200).json(fnotes);
@@ -82,10 +103,20 @@ export const updatefnvalue = async (req, res) => {
 };
 
 export const fetchfn = async (req, res) => {
-  const { dept_id, category } = req.query;
+  const { dept_id, category, project_code } = req.query;
   try {
-    const fnidvalue = await lastfnid(dept_id, category);
+    const fnidvalue = await lastfnid(dept_id, category, project_code);
     return res.status(200).json(fnidvalue);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deletefn = async (req, res) => {
+  const { fnid } = req.params;
+  try {
+    const deletedfn = await softdeletefn(fnid);
+    return res.status(200).json(deletedfn);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

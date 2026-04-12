@@ -5,6 +5,7 @@ import {
   fetchfnids,
   fetchfnvalue,
   updatefnvalue,
+  deletefn,
 } from "../Controllers/FileNoteController.js";
 const router = express.Router();
 
@@ -13,5 +14,6 @@ router.route("/").get(fetchfnids);
 router.route("/fetchdocno/").get(fetchfn);
 router.route("/:fnid").get(fetchfnvalue);
 router.route("/updatefn/:fnid").put(updatefnvalue);
+router.route("/deletefn/:fnid").put(deletefn);
 
 export default router;

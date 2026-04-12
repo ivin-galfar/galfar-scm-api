@@ -40,15 +40,99 @@ export const existing = async (email) => {
 
   return existing.rows;
 };
-export const getEmailsByRole = async (role) => {
-  if (!role || typeof role !== "string") {
-    throw new Error("Invalid role provided");
+export const getEmailsByRole = async (
+  role,
+  dept_id,
+  project_code,
+  is_admin = false,
+) => {
+  try {
+    let values = [role];
+    let query = `
+    SELECT * 
+    FROM users 
+    WHERE $1::text = ANY(role)
+    AND is_valid = true
+  `;
+    let index = 2;
+
+    if (dept_id) {
+      query += ` AND $${index} = ANY(dept_code)`;
+      values.push(dept_id);
+      index++;
+    }
+
+    if (is_admin) {
+      query += ` AND is_admin = $${index}`;
+      values.push(is_admin);
+      index++;
+    }
+    if (role == "cm" || role == "pm" || role == "initpr") {
+      query += ` AND $${index} = ANY(pr_code)`;
+      values.push(project_code);
+      index++;
+    }
+
+    const result = await pool.query(query, values);
+
+    return result.rows.map((r) => r.email);
+  } catch (error) {
+    throw error;
   }
-  const query =
-    "SELECT email FROM users WHERE $1 = ANY(role) AND is_valid = true";
-  const params = [role];
-  const result = await pool.query(query, params);
-  return result.rows.map((r) => r.email);
+};
+
+export const getMultipleEmailsByRole = async (
+  role,
+  dept_id,
+  is_admin = false,
+  project_code,
+) => {
+  try {
+    let values = Array.isArray(role) ? [role] : [[role]];
+    let query = `
+    SELECT * 
+    FROM users 
+    WHERE is_valid = true`;
+    let index = 2;
+
+    if (dept_id) {
+      query += ` AND $${index} = ANY(dept_code)`;
+      values.push(dept_id);
+      index++;
+    }
+    if (role.includes("initfn")) {
+      query += ` AND ( role && array_remove($1::text[], 'initfn')  OR NOT ($1 @> ARRAY['initfn']) OR is_admin = true)`;
+    }
+
+    query += `
+      AND (
+        'hod' = ANY(role)
+        OR (role && $1))`;
+
+    if (project_code == null) {
+      query += `
+    AND (
+      pr_code IS NULL
+      OR array_position(pr_code, NULL) IS NOT NULL
+    )`;
+    } else {
+      query += ` AND $${index} = ANY(pr_code)`;
+      values.push(project_code);
+      index++;
+    }
+
+    if (is_admin) {
+      query += ` AND is_admin = $${index}`;
+      values.push(is_admin);
+      index++;
+    }
+
+    const result = await pool.query(query, values);
+
+    return result.rows.map((r) => r.email).filter(Boolean);
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const getEmailsByProject = async (project) => {

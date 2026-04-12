@@ -1,12 +1,16 @@
 import nodemailer from "nodemailer";
 import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
-import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
-import { emaillogs } from "../Models/emailModel.js";
+import {
+  getEmailsByProject,
+  getEmailsByRole,
+  getMultipleEmailsByRole,
+} from "../Models/userModel.js";
+import { emaillogs, emaillogsfn } from "../Models/emailModel.js";
 import pmMap from "../Utils/pmmapping.js";
 import { sentemail } from "../Models/logisticsModel.js";
 
 export const EmailNotify = async (req, res) => {
-  const { dept } = req.query || "";
+  const { dept = "", type = "", category = "" } = req.query || {};
   if (dept == "logistics") {
     const {
       status,
@@ -367,7 +371,7 @@ export const EmailNotify = async (req, res) => {
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
-  } else {
+  } else if (dept == "plant" && !type && !category) {
     const { projectvalue, hiringname, type } = req.body.formData;
     const role = req.body.userInfo.role[0];
     const { status } = req.body;
@@ -550,6 +554,242 @@ export const EmailNotify = async (req, res) => {
         success: true,
         message: "Email sent successfully.",
         emailInfo,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  } else if (dept == "plant" && type != "" && category != "") {
+    const {
+      id,
+      dept_id,
+      role,
+      is_admin,
+      doc_no,
+      name,
+      status,
+      created_at,
+      project_code,
+    } = req.body;
+
+    const nextRoleMap =
+      type === "file_note"
+        ? { initfn: "hod", hod: "fm", fm: "gm", gm: "ceo" }
+        : { initfn: "hod", initpr: "cm", hod: "gm", gm: "ceo" };
+    let nextRole = "";
+    let ccemail = [];
+
+    nextRole =
+      status === "approved" || status === "rejected"
+        ? category != "Demob"
+          ? "initfn"
+          : "initpr"
+        : nextRoleMap[role] || null;
+    let recipients = [];
+    try {
+      if (nextRole == "initfn") {
+        if (type == "file_note") {
+          if (category == "General" || category == "Ap") {
+            ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+            recipients = await getMultipleEmailsByRole(nextRole, dept_id, true);
+          } else if (category == "ADTS" || category == "ADTSNew") {
+            ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+
+            if (status !== "rejected") {
+              recipients = await getMultipleEmailsByRole(["fm"], dept_id);
+            } else {
+              recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
+            }
+          } else if (category == "TFW") {
+            ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+            recipients = await getMultipleEmailsByRole(nextRole, dept_id);
+          }
+        } else if (type == "ioc") {
+          if (status !== "rejected") {
+            recipients = await getMultipleEmailsByRole(["fm"], dept_id);
+          }
+
+          if (status == "rejected") {
+            ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+            recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
+          }
+          if (
+            (category == "Insurance" || category == "FC" || category == "PR") &&
+            status !== "rejected"
+          ) {
+            ccemail.push(
+              ...(await getMultipleEmailsByRole(["hod", "initfn"], dept_id)),
+            );
+          }
+        }
+      } else if (nextRole == "initpr") {
+        recipients = await getEmailsByRole(nextRole, dept_id, project_code);
+        if (status != "rejected") {
+          ccemail.push(
+            ...(await getMultipleEmailsByRole(
+              ["pm", "spm", "pd", "cm", "scm"],
+              dept_id,
+              false,
+              project_code,
+            )),
+          );
+        }
+      } else {
+        recipients = await getEmailsByRole(nextRole, dept_id, project_code);
+      }
+
+      if (!Array.isArray(recipients)) recipients = [];
+      if (recipients?.length === 0) {
+        return res.status(400).json({
+          success: true,
+          message: "No email recipients found, email not sent",
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: `Failed to fetch recipient emails: ${error.message}`,
+      });
+    }
+
+    try {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+        to: recipients,
+        cc: ccemail,
+        subject: `${type}/${dept_id}/${category}/${doc_no} - ${
+          nextRole === "initfn" || nextRole === "initpr"
+            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            : status == "review"
+              ? "Under Review"
+              : "Approval Required"
+        }: (${new Date(created_at)
+          .toLocaleDateString("en-AE", {
+            timeZone: "Asia/Dubai",
+          })
+          .replace(/\//g, "-")})`,
+        html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
+        <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <!--[if mso]>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+                <td bgcolor="#004080"
+                    style="padding:16px 24px;">
+                  <p style="margin:0;
+                            color:#ffffff;
+                            font-size:20px;
+                            font-weight:bold;
+                            font-family:Arial, sans-serif;">
+                    Comparative Statement -
+                    ${
+                      nextRole === "initfn" || nextRole == "initfn"
+                        ? status.charAt(0).toUpperCase() +
+                          status.slice(1).toLowerCase()
+                        : "Approval Required"
+                    }
+                  </p>
+                </td>
+              </tr>
+            </table>
+          <![endif]-->
+
+          <!--[if !mso]><!-- -->
+          <div style="background-color: #004080; padding: 16px 24px;">
+            <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
+              nextRole === "initfn"
+                ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+                : "Approval Required"
+            }</h2>
+          </div>
+          <![endif]-->
+
+          <!-- Body -->
+          <div style="padding: 24px; color: #333;">
+            <p style="margin: 0 0 16px;">Dear Sir,</p>
+            <p style="margin: 0 0 16px;">The comparative statement  - <strong>${doc_no}/${name}/${type}/${new Date(
+              created_at,
+            ).toLocaleDateString("en-AE", {
+              timeZone: "Asia/Dubai",
+            })}</strong> is <strong>${
+              ["approved", "rejected", "review"].includes(status)
+                ? status === "rejected"
+                  ? `Rejected by ${role}`
+                  : status == "review"
+                    ? "under Review"
+                    : status
+                : "awaiting your approval"
+            }</strong>.</p>
+
+            <!-- Button -->
+             <!--[if mso]>
+            <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
+            <tr>
+              <td align="center"
+                  bgcolor="#004080"
+                  style="padding:12px 24px; font-weight:bold; font-size:16px;">
+                <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
+                  style="color:#ffffff; text-decoration:none; display:inline-block;">
+                  View Comparative Statement
+                </a>
+              </td>
+
+            </tr>
+          </table>
+          <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
+          <![endif]-->
+           <!--[if !mso]><!-- -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
+                 style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
+                View Comparative Statement
+              </a>
+              </div>
+              <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
+          <!--<![endif]-->
+
+            <!-- Signature -->
+            <p style="margin: 24px 0 4px;">Thank you,</p>
+            <p style="margin: 0; font-weight: 600;">Software Development Team,</p>
+            <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
+
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
+            This is an automated email. Please do not reply.
+          </div>
+        </div>
+      </div>
+    `,
+      };
+      const approverdetails = {
+        role,
+        datetime: new Date(),
+        status: status,
+      };
+      const [emailInfo] = await Promise.all([
+        transporter.sendMail(mailOptions),
+      ]);
+
+      emaillogsfn(id, emailInfo, approverdetails);
+
+      return res.status(200).json({
+        success: true,
+        message: "Email sent successfully.",
+        emailInfo,
+        approvedInfo: approverdetails,
       });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
