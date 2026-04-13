@@ -591,7 +591,7 @@ export const EmailNotify = async (req, res) => {
           if (category == "General" || category == "Ap") {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             recipients = await getMultipleEmailsByRole(nextRole, dept_id, true);
-          } else if (category == "ADTS" || category == "ADTSNew") {
+          } else if (category == "ADTSRen" || category == "ADTSNew") {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
 
             if (status !== "rejected") {
