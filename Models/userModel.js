@@ -81,6 +81,8 @@ export const getEmailsByRole = async (
 
     return result.rows.map((r) => r.email);
   } catch (error) {
+    console.log(error);
+
     throw error;
   }
 };

@@ -656,6 +656,8 @@ export const EmailNotify = async (req, res) => {
         });
       }
     } catch (error) {
+      console.log(error);
+
       return res.status(500).json({
         success: false,
         error: `Failed to fetch recipient emails: ${error.message}`,
