@@ -88,7 +88,8 @@ export const fetchfnvalue = async (req, res) => {
 
 export const updatefnvalue = async (req, res) => {
   const { fnid } = req.params;
-  const { sentforapproval, status, comments, role } = req.body;
+  const { sentforapproval, status, comments, role, type, category, action } =
+    req.body;
 
   try {
     const fnidvalue = await updatefilenote(
@@ -97,6 +98,9 @@ export const updatefnvalue = async (req, res) => {
       status,
       role,
       comments,
+      type,
+      category,
+      action,
     );
     return res.status(200).json(fnidvalue);
   } catch (error) {

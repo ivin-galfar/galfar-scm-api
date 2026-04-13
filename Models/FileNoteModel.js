@@ -1,4 +1,5 @@
 import pool from "../Config/db.js";
+import { statusExpected } from "../helpers/plantstatus.js";
 
 export const insertFileNotes = async ({
   name,
@@ -53,7 +54,7 @@ export const filenote = async (
       ceo: "status = 'pending for ceo'",
       gm: "status = 'pending for gm'",
       hod: "status = 'pending for hod'",
-      fm: "status = 'pending for fm'",
+      fm: "status = 'pending for sfm'",
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
     };
@@ -193,18 +194,34 @@ export const updatefilenote = async (
   status,
   role,
   comments,
+  type,
+  category,
+  action,
 ) => {
   try {
     let query = "UPDATE file_note SET status = $1";
     let values = [status];
     let paramIndex = 2;
 
+    let currentstatus = "";
+    let nextstatus = statusExpected(role, action, type, category);
+    if (status != "review") {
+      if (nextstatus == status && status != "pending for hod") {
+        currentstatus = "approved";
+      } else if (status == "pending for hod") {
+        currentstatus = "created";
+      } else if (status == "rejected") {
+        currentstatus = "rejected";
+      } else {
+        currentstatus = status;
+      }
+    }
     if (status) {
       const approvalData = {
         ...(comments ? { comment: comments } : {}),
         date: new Date().toISOString(),
         role: role[0],
-        status: status,
+        status: currentstatus,
         ...(status === "rejected" && {
           rejectedBy: role[0],
         }),
