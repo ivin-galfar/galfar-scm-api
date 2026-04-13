@@ -559,6 +559,8 @@ export const EmailNotify = async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   } else if (dept == "plant" && type != "" && category != "") {
+    console.log("ulla varth");
+
     const {
       id,
       dept_id,
@@ -584,6 +586,9 @@ export const EmailNotify = async (req, res) => {
           ? "initfn"
           : "initpr"
         : nextRoleMap[role] || null;
+    console.log("next:" + nextRole);
+    console.log("role:" + role);
+
     let recipients = [];
     try {
       if (nextRole == "initfn") {
@@ -634,6 +639,11 @@ export const EmailNotify = async (req, res) => {
           );
         }
       } else {
+        console.log("yes coming");
+        console.log(nextRole);
+        console.log(dept_id);
+        console.log(project_code);
+
         recipients = await getEmailsByRole(nextRole, dept_id, project_code);
       }
 

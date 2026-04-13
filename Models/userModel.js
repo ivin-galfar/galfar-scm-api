@@ -72,6 +72,8 @@ export const getEmailsByRole = async (
       values.push(project_code);
       index++;
     }
+    console.log(query);
+    console.log(values);
 
     const result = await pool.query(query, values);
 
