@@ -202,7 +202,6 @@ export const totalReceipts = async (
       query += ` AND created_at >= date_trunc('month', CURRENT_DATE)
              AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'`;
     }
-    console.log(query);
 
     const { rows } = await pool.query(query, values);
     return rows[0];
