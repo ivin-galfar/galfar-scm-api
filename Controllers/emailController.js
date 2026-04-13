@@ -679,7 +679,7 @@ export const EmailNotify = async (req, res) => {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
         cc: ccemail,
-        subject: `${type}/${dept_id}/${category}/${doc_no} - ${
+        subject: `${type == "file_note" ? "File Note" : "IOC"}/${name}/${category}/${doc_no} - ${
           nextRole === "initfn" || nextRole === "initpr"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : status == "review"
@@ -731,7 +731,7 @@ export const EmailNotify = async (req, res) => {
           <!-- Body -->
           <div style="padding: 24px; color: #333;">
             <p style="margin: 0 0 16px;">Dear Sir,</p>
-            <p style="margin: 0 0 16px;">The comparative statement  - <strong>${doc_no}/${name}/${type}/${new Date(
+            <p style="margin: 0 0 16px;">The FN/IOC  - <strong>${doc_no}/${name}/${type}/${new Date(
               created_at,
             ).toLocaleDateString("en-AE", {
               timeZone: "Asia/Dubai",
