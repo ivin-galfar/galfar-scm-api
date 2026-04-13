@@ -645,6 +645,7 @@ export const EmailNotify = async (req, res) => {
         console.log(project_code);
 
         recipients = await getEmailsByRole(nextRole, dept_id, project_code);
+        console.log(recipients);
       }
 
       if (!Array.isArray(recipients)) recipients = [];

@@ -76,6 +76,8 @@ export const getEmailsByRole = async (
     console.log(values);
 
     const result = await pool.query(query, values);
+    console.log("values:" + values);
+    console.log("result:" + result);
 
     return result.rows.map((r) => r.email);
   } catch (error) {
