@@ -47,7 +47,9 @@ export const fetchfnids = async (req, res) => {
 
   const department_id = req.query?.dept_id.split(",");
   const isadmin = req.query.isadmin === "true";
-  let updatedRoles = roles.filter((r) => r !== "initfn")[0];
+  const updatedRoles = isadmin
+    ? roles.find((r) => r === "initfn")
+    : roles.find((r) => r !== "initfn");
   // if (!roles.includes("initpr"))
   //   updatedRoles = roles.filter((r) => r == "initfn")[0];
 
