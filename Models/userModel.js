@@ -72,17 +72,11 @@ export const getEmailsByRole = async (
       values.push(project_code);
       index++;
     }
-    console.log(query);
-    console.log(values);
 
     const result = await pool.query(query, values);
-    console.log("values:" + values);
-    console.log("result:" + result.rows);
 
     return result.rows.map((r) => r.email);
   } catch (error) {
-    console.log(error);
-
     throw error;
   }
 };

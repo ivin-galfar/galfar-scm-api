@@ -12,7 +12,7 @@ export const fetchallreceiptslogic = async (
   if (typeof expectedStatuses === "string") {
     statuses = expectedStatuses.split(",").map((s) => s.trim());
   } else {
-    statuses = expectedStatuses;
+    statuses = expectedStatuses ?? [];
   }
 
   let multiStatuses = [];
