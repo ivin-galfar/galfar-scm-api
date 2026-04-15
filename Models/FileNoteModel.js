@@ -79,11 +79,26 @@ export const filenote = async (
       let last7DaysQuery = `
             SELECT 
               name,created_at,status
-            FROM file_note
-            WHERE deleted = 0
-            AND created_at >= NOW() - INTERVAL '7 days'
-            ORDER BY created_at DESC`;
-      const result = await pool.query(last7DaysQuery);
+            FROM file_note`;
+
+      const last7DaysConditions = [];
+      if (department_id) {
+        const filteredDepts =
+          role === "hod" ? department_id.filter((d) => d !== 2) : department_id;
+        // whereConditions.push(`department_id = ANY($${values.length + 1})`);
+        last7DaysConditions.push(`department_id = ANY($${values.length + 1})`);
+        values.push(filteredDepts);
+      }
+      // whereConditions.push("deleted = 0");
+      last7DaysConditions.push("deleted = 0");
+
+      last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
+
+      if (last7DaysConditions.length > 0) {
+        last7DaysQuery += " WHERE " + last7DaysConditions.join(" AND ");
+      }
+
+      const result = await pool.query(last7DaysQuery, values);
       last7DaysResult = result.rows;
     } else {
       query = count
