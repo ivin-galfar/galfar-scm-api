@@ -176,17 +176,30 @@ export const fetchTableData = async (cs_id) => {
   }
 };
 
-export const fetchAllCsid = async (module) => {
+export const fetchAllCsid = async (module, role, project) => {
   try {
     let query =
-      "SELECT id,status,project,created_at,cargo_details,createdby FROM log_statements where deleted=0 ORDER BY id Desc";
+      "SELECT id, status, project, created_at, cargo_details, createdby FROM log_statements WHERE deleted = 0";
+
+    let values = [];
+
+    if ((role?.includes("pm") || role?.includes("hod")) && project) {
+      const projects = Array.isArray(project) ? project : [project];
+
+      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      values.push(projects.map(String));
+    }
+
+    query += " ORDER BY id DESC";
+
     if (module?.startsWith("/lstatements")) {
       query += " LIMIT 20";
     }
     if (module?.startsWith("/dashboardlg")) {
       query += " LIMIT 100";
     }
-    const { rows } = await pool.query(query);
+
+    const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
     throw error;
@@ -197,6 +210,7 @@ export const fetchtotalstatements = async (
   statusfilter,
   role,
   searchcs,
+  project,
   emailcron = false,
 ) => {
   try {
@@ -226,6 +240,11 @@ export const fetchtotalstatements = async (
       query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
       values.push(`%${searchcs}%`);
     }
+    if (project && project.length > 0) {
+      const projects = Array.isArray(project) ? project : [project];
+      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      values.push(projects.map(String));
+    }
     if (role != "initlg") {
       query += ` AND status != 'created' AND status IS NOT NULL`;
     }
@@ -246,6 +265,7 @@ export const fetchAllCsidvalues = async (
   page,
   limit,
   role,
+  project,
 ) => {
   try {
     const offset = page * limit;
@@ -270,6 +290,12 @@ export const fetchAllCsidvalues = async (
       query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
       values.push(`%${searchcs}%`);
     }
+
+    if (project && project.length > 0) {
+      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      values.push([project]);
+    }
+
     if (role != "initlg") {
       query += ` AND status != 'created' AND status IS NOT NULL`;
     }

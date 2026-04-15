@@ -60,10 +60,12 @@ export const cronemails = () => {
         "All",
         null,
         null,
+        null,
         true,
       );
       const rejectedlogstatements = await fetchtotalstatements(
         "rejected",
+        null,
         null,
         null,
         true,
@@ -72,10 +74,12 @@ export const cronemails = () => {
         "approved",
         null,
         null,
+        null,
         true,
       );
       const pendinglogstatements = await fetchtotalstatements(
         "Pending",
+        null,
         null,
         null,
         true,
