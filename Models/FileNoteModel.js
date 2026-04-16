@@ -62,7 +62,8 @@ export const filenote = async (
     const pendingCondition = ROLE_PENDING_CONDITIONS[role] || "";
     const offset = page * limit;
     const whereConditions = [];
-    const values = [];
+    const dashValues = [];
+    let values = [];
 
     // Build base query
     let query = "";
@@ -85,11 +86,11 @@ export const filenote = async (
       if (department_id) {
         const filteredDepts =
           role === "hod" ? department_id.filter((d) => d !== 2) : department_id;
-        // whereConditions.push(`department_id = ANY($${values.length + 1})`);
-        last7DaysConditions.push(`department_id = ANY($${values.length + 1})`);
-        values.push(filteredDepts);
+        last7DaysConditions.push(
+          `department_id = ANY($${dashValues.length + 1})`,
+        );
+        dashValues.push(filteredDepts);
       }
-      // whereConditions.push("deleted = 0");
       last7DaysConditions.push("deleted = 0");
 
       last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
@@ -98,7 +99,7 @@ export const filenote = async (
         last7DaysQuery += " WHERE " + last7DaysConditions.join(" AND ");
       }
 
-      const result = await pool.query(last7DaysQuery, values);
+      const result = await pool.query(last7DaysQuery, dashValues);
       last7DaysResult = result.rows;
     } else {
       query = count
