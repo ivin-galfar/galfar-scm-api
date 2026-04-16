@@ -594,6 +594,9 @@ export const EmailNotify = async (req, res) => {
             recipients = await getMultipleEmailsByRole(nextRole, dept_id, true);
           } else if (category == "ADTSRen" || category == "ADTSNew") {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+            ccemail.push(
+              ...(await getMultipleEmailsByRole(["initfn"], dept_id)),
+            );
 
             if (status !== "rejected") {
               recipients = await getMultipleEmailsByRole(["fm"], dept_id);
@@ -617,8 +620,9 @@ export const EmailNotify = async (req, res) => {
             (category == "Insurance" || category == "FC" || category == "PR") &&
             status !== "rejected"
           ) {
+            ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             ccemail.push(
-              ...(await getMultipleEmailsByRole(["hod", "initfn"], dept_id)),
+              ...(await getMultipleEmailsByRole(["initfn"], dept_id)),
             );
           }
         }
@@ -646,7 +650,6 @@ export const EmailNotify = async (req, res) => {
         });
       }
     } catch (error) {
-
       return res.status(500).json({
         success: false,
         error: `Failed to fetch recipient emails: ${error.message}`,

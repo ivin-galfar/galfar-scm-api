@@ -57,9 +57,10 @@ export const filenote = async (
       fm: "status = 'pending for sfm'",
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
+      initpr: "status LIKE 'pending%'",
     };
 
-    const pendingCondition = ROLE_PENDING_CONDITIONS[role] || "";
+    const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
     const offset = page * limit;
     const whereConditions = [];
     const dashValues = [];
@@ -84,14 +85,25 @@ export const filenote = async (
 
       const last7DaysConditions = [];
       if (department_id) {
-        const filteredDepts =
-          role === "hod" ? department_id.filter((d) => d !== 2) : department_id;
+        const filteredDepts = role.includes("hod")
+          ? department_id.filter((d) => d !== 2)
+          : department_id;
         last7DaysConditions.push(
           `department_id = ANY($${dashValues.length + 1})`,
         );
         dashValues.push(filteredDepts);
       }
       last7DaysConditions.push("deleted = 0");
+
+      if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
+        dashValues.push("Demob");
+        last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
+        dashValues.push(Number(project_code));
+      } else {
+        last7DaysConditions.push(`category != $${dashValues.length + 1}`);
+        dashValues.push("Demob");
+      }
 
       last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
 
@@ -112,13 +124,14 @@ export const filenote = async (
       whereConditions.push(
         `(status LIKE $${values.length + 1} OR status = $${values.length + 2} OR status = $${values.length + 3})`,
       );
-      values.push(`%${role.toLowerCase()}`, "approved", "rejected");
+      values.push(`%${role[0].toLowerCase()}`, "approved", "rejected");
     }
 
     // Add department filter
     if (department_id) {
-      const filteredDepts =
-        role === "hod" ? department_id.filter((d) => d !== 2) : department_id;
+      const filteredDepts = role.includes("hod")
+        ? department_id.filter((d) => d !== 2)
+        : department_id;
       whereConditions.push(`department_id = ANY($${values.length + 1})`);
       values.push(filteredDepts);
     }
@@ -127,7 +140,7 @@ export const filenote = async (
     whereConditions.push("deleted = 0");
 
     // Add category and project filter based on role
-    if (["initpr", "cm", "pm"].includes(role)) {
+    if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
       whereConditions.push(`category = $${values.length + 1}`);
       values.push("Demob");
       whereConditions.push(`project_code = $${values.length + 1}`);
@@ -151,7 +164,9 @@ export const filenote = async (
     // Add status filter for dashboard
     if (module === "/dashboardfn" && statusfilter !== "All") {
       if (statusfilter === "Pending") {
-        const pendingPattern = isadmin ? "%pending%" : `%${role.toLowerCase()}`;
+        const pendingPattern = isadmin
+          ? "%pending%"
+          : `%${role[0].toLowerCase()}`;
         whereConditions.push(`status LIKE $${values.length + 1}`);
         values.push(pendingPattern);
       } else {

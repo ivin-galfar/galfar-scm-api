@@ -89,6 +89,7 @@ export const getMultipleEmailsByRole = async (
 ) => {
   try {
     let values = Array.isArray(role) ? [role] : [[role]];
+    const isHod = role.includes("hod");
     let query = `
     SELECT * 
     FROM users 
@@ -109,11 +110,14 @@ export const getMultipleEmailsByRole = async (
         'hod' = ANY(role)
         OR (role && $1))`;
 
-    if (project_code == null) {
+    if (isHod) {
+      query += ` AND $${index} = ANY(pr_code)`;
+      values.push(1);
+      index++;
+    } else if (project_code == null) {
       query += `
     AND (
-      pr_code IS NULL
-      OR array_position(pr_code, NULL) IS NOT NULL
+      pr_code IS NULL OR pr_code = '{}'
     )`;
     } else {
       query += ` AND $${index} = ANY(pr_code)`;

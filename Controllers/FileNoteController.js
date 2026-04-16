@@ -47,11 +47,17 @@ export const fetchfnids = async (req, res) => {
 
   const department_id = req.query?.dept_id.split(",");
   const isadmin = req.query.isadmin === "true";
-  const updatedRoles = isadmin
-    ? roles.find((r) => r === "initfn")
-    : roles.find((r) => r !== "initfn");
-  // if (!roles.includes("initpr"))
-  //   updatedRoles = roles.filter((r) => r == "initfn")[0];
+  let updatedRoles = [];
+
+  if (isadmin) {
+    if (roles.includes("initpr")) {
+      updatedRoles = ["initpr"];
+    } else if (roles.includes("initfn")) {
+      updatedRoles = ["initfn"];
+    }
+  } else {
+    updatedRoles = roles.filter((r) => r !== "initfn");
+  }
 
   try {
     const fnotes = await filenote(
