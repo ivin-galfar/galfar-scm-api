@@ -579,7 +579,7 @@ export const EmailNotify = async (req, res) => {
     let ccemail = [];
 
     nextRole =
-      status === "approved" || status === "rejected"
+      status === "approved" || status === "rejected" || status === "review"
         ? category != "Demob"
           ? "initfn"
           : "initpr"
@@ -598,7 +598,7 @@ export const EmailNotify = async (req, res) => {
               ...(await getMultipleEmailsByRole(["initfn"], dept_id)),
             );
 
-            if (status !== "rejected") {
+            if (status !== "rejected" && status !== "review") {
               recipients = await getMultipleEmailsByRole(["fm"], dept_id);
             } else {
               recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
@@ -608,17 +608,21 @@ export const EmailNotify = async (req, res) => {
             recipients = await getMultipleEmailsByRole(nextRole, dept_id);
           }
         } else if (type == "ioc") {
-          if (status !== "rejected") {
+          if (status !== "rejected" && status !== "review") {
             recipients = await getMultipleEmailsByRole(["fm"], dept_id);
           }
 
-          if (status == "rejected") {
+          if (status == "rejected" || status == "review") {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
           }
           if (
-            (category == "Insurance" || category == "FC" || category == "PR") &&
-            status !== "rejected"
+            (category == "Insurance" ||
+              category == "FC" ||
+              category == "PR" ||
+              category == "DPR") &&
+            status !== "rejected" &&
+            status !== "review"
           ) {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             ccemail.push(
@@ -628,7 +632,7 @@ export const EmailNotify = async (req, res) => {
         }
       } else if (nextRole == "initpr") {
         recipients = await getEmailsByRole(nextRole, dept_id, project_code);
-        if (status != "rejected") {
+        if (status != "rejected" && status !== "review") {
           ccemail.push(
             ...(await getMultipleEmailsByRole(
               ["pm", "spm", "pd", "cm", "scm"],

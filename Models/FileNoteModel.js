@@ -10,6 +10,7 @@ export const insertFileNotes = async ({
   file_names,
   file_urls,
   project,
+  sentforapproval,
 }) => {
   const projectValue = project === "" ? null : parseInt(project, 10);
   try {
@@ -19,7 +20,7 @@ export const insertFileNotes = async ({
       dept_id,
       name,
       content,
-      "yes",
+      sentforapproval,
       "created",
       type,
       category,
@@ -47,6 +48,8 @@ export const filenote = async (
   limit,
   searchcs,
   count,
+  categoryFilter,
+  typeFilter,
 ) => {
   try {
     // Map role to pending condition
@@ -116,7 +119,7 @@ export const filenote = async (
     } else {
       query = count
         ? "SELECT COUNT(*) FROM file_note"
-        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at FROM file_note";
+        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name FROM file_note";
     }
 
     // Add access control filter
@@ -136,6 +139,14 @@ export const filenote = async (
       values.push(filteredDepts);
     }
 
+    if (categoryFilter) {
+      whereConditions.push(`category = ($${values.length + 1})`);
+      values.push(categoryFilter);
+    }
+    if (typeFilter) {
+      whereConditions.push(`type = ($${values.length + 1})`);
+      values.push(typeFilter);
+    }
     // Always include non-deleted records
     whereConditions.push("deleted = 0");
 
@@ -150,9 +161,11 @@ export const filenote = async (
       values.push("Demob");
     }
 
-    // Hide created status for non-admins
+    // Hide created and review status for non-admins
     if (!isadmin) {
-      whereConditions.push("status != 'created'");
+      whereConditions.push(
+        "status != 'created' AND status !='review'AND status !='edit'",
+      );
     }
 
     // Add search filter
@@ -194,6 +207,7 @@ export const filenote = async (
         query += " LIMIT 50";
       }
     }
+    console.log(query);
 
     const { rows } = await pool.query(query, values);
 
@@ -228,7 +242,13 @@ export const updatefilenote = async (
   type,
   category,
   action,
+  content,
+  attachments,
+  name,
 ) => {
+  const file = attachments?.map((a) => a.url);
+  const file_name = attachments?.map((a) => a.name);
+
   try {
     let query = "UPDATE file_note SET status = $1";
     let values = [status];
@@ -236,7 +256,7 @@ export const updatefilenote = async (
 
     let currentstatus = "";
     let nextstatus = statusExpected(role, action, type, category);
-    if (status != "review") {
+    if (status != "review" && status != null) {
       if (nextstatus == status && status != "pending for hod") {
         currentstatus = "approved";
       } else if (status == "pending for hod") {
@@ -262,10 +282,37 @@ export const updatefilenote = async (
       values.push(JSON.stringify([approvalData]));
       paramIndex++;
     }
-
-    if (sentforapproval !== undefined) {
+    if (sentforapproval == null) {
       query += `, sentforapproval = $${paramIndex}`;
       values.push(sentforapproval);
+      paramIndex++;
+    }
+
+    if (name != null) {
+      query += `, name = $${paramIndex}`;
+      values.push(name);
+      paramIndex++;
+    }
+
+    if (sentforapproval !== undefined && sentforapproval !== null) {
+      query += `, sentforapproval = $${paramIndex}`;
+      values.push(sentforapproval);
+      paramIndex++;
+    }
+    if (content !== undefined) {
+      query += `, content = $${paramIndex}`;
+      values.push(content);
+      paramIndex++;
+    }
+    if (file !== undefined) {
+      query += `, file = $${paramIndex}`;
+      values.push(file);
+      paramIndex++;
+    }
+
+    if (file_name !== undefined) {
+      query += `, file_name = $${paramIndex}`;
+      values.push(file_name);
       paramIndex++;
     }
     query += ` WHERE id = $${paramIndex} RETURNING *`;

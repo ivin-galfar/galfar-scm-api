@@ -17,6 +17,7 @@ export const AddFileNotes = async (req, res) => {
     file_names,
     file_urls,
     project,
+    sentforapproval,
   } = req.body;
 
   try {
@@ -29,6 +30,7 @@ export const AddFileNotes = async (req, res) => {
       file_names,
       file_urls,
       project,
+      sentforapproval,
     });
     return res.status(200).json(filenote);
   } catch (error) {
@@ -41,7 +43,16 @@ export const AddFileNotes = async (req, res) => {
 };
 
 export const fetchfnids = async (req, res) => {
-  const { module, statusfilter, page, limit, searchcs, count } = req.query;
+  const {
+    module,
+    statusfilter,
+    page,
+    limit,
+    searchcs,
+    count,
+    categoryFilter,
+    typeFilter,
+  } = req.query;
   const project_code = req.query["project_code[]"];
   const roles = req.query?.role.split(",");
 
@@ -71,6 +82,8 @@ export const fetchfnids = async (req, res) => {
       limit,
       searchcs,
       count,
+      categoryFilter,
+      typeFilter,
     );
 
     return res.status(200).json(fnotes);
@@ -94,8 +107,18 @@ export const fetchfnvalue = async (req, res) => {
 
 export const updatefnvalue = async (req, res) => {
   const { fnid } = req.params;
-  const { sentforapproval, status, comments, role, type, category, action } =
-    req.body;
+  const {
+    sentforapproval,
+    status,
+    comments,
+    role,
+    type,
+    category,
+    action,
+    content,
+    attachments,
+    name,
+  } = req.body;
 
   try {
     const fnidvalue = await updatefilenote(
@@ -107,7 +130,11 @@ export const updatefnvalue = async (req, res) => {
       type,
       category,
       action,
+      content,
+      attachments,
+      name,
     );
+
     return res.status(200).json(fnidvalue);
   } catch (error) {
     res.status(500).json({ error: error.message });
