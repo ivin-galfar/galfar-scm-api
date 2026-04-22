@@ -63,6 +63,8 @@ export const fetchfnids = async (req, res) => {
   if (isadmin) {
     if (roles.includes("initpr")) {
       updatedRoles = ["initpr"];
+    } else if (roles.includes("initdc")) {
+      updatedRoles = ["initdc"];
     } else if (roles.includes("initfn")) {
       updatedRoles = ["initfn"];
     }

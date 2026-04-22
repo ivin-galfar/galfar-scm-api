@@ -61,6 +61,8 @@ export const filenote = async (
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
       initpr: "status LIKE 'pending%'",
+      initdc: "status LIKE 'pending%'",
+      pm: "status LIKE 'pending for pm'",
     };
 
     const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
@@ -98,14 +100,28 @@ export const filenote = async (
       }
       last7DaysConditions.push("deleted = 0");
 
-      if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
-        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
+      if (["initpr"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
         dashValues.push("Demob");
         last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
         dashValues.push(Number(project_code));
+      } else if (["cm", "pm"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(
+          `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
+        );
+        dashValues.push("FWA", "Demob");
+        last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
+        dashValues.push(Number(project_code));
+      } else if (["initdc"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
+        dashValues.push("FWA");
+        last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
+        dashValues.push(Number(project_code));
       } else {
-        last7DaysConditions.push(`category != $${dashValues.length + 1}`);
-        dashValues.push("Demob");
+        last7DaysConditions.push(
+          `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
+        );
+        dashValues.push("FWA", "Demob");
       }
 
       last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
@@ -151,21 +167,36 @@ export const filenote = async (
     whereConditions.push("deleted = 0");
 
     // Add category and project filter based on role
-    if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
-      whereConditions.push(`category = $${values.length + 1}`);
+    if (["initpr"].some((r) => role.includes(r))) {
+      whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
       whereConditions.push(`project_code = $${values.length + 1}`);
       values.push(Number(project_code));
-    } else {
-      whereConditions.push(`category != $${values.length + 1}`);
+    } else if (["cm", "pm"].some((r) => role.includes(r))) {
+      whereConditions.push(
+        `category IN ($${values.length + 1}, $${values.length + 2})`,
+      );
+      values.push("FWA", "Demob");
+      whereConditions.push(`project_code = $${values.length + 1}`);
+      values.push(Number(project_code));
+    } else if (["initdc"].some((r) => role.includes(r))) {
+      whereConditions.push(`category = $${values.length + 1}`);
+      values.push("FWA");
+      whereConditions.push(`project_code = $${values.length + 1}`);
+      values.push(Number(project_code));
+    } else if (["gm"].some((r) => role.includes(r))) {
+      whereConditions.push(`category NOT IN ($${values.length + 1})`);
       values.push("Demob");
+    } else {
+      whereConditions.push(
+        `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
+      );
+      values.push("FWA", "Demob");
     }
 
     // Hide created and review status for non-admins
     if (!isadmin) {
-      whereConditions.push(
-        "status != 'created' AND status !='review'AND status !='edit'",
-      );
+      whereConditions.push("status != 'created' AND status !='edit'");
     }
 
     // Add search filter
@@ -207,7 +238,6 @@ export const filenote = async (
         query += " LIMIT 50";
       }
     }
-    console.log(query);
 
     const { rows } = await pool.query(query, values);
 
