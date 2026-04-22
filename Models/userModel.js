@@ -52,8 +52,7 @@ export const getEmailsByRole = async (
     SELECT * 
     FROM users 
     WHERE $1::text = ANY(role)
-    AND is_valid = true
-  `;
+    AND is_valid = true`;
     let index = 2;
 
     if (dept_id) {

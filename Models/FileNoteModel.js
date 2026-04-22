@@ -10,6 +10,7 @@ export const insertFileNotes = async ({
   file_names,
   file_urls,
   project,
+  sentforapproval,
 }) => {
   const projectValue = project === "" ? null : parseInt(project, 10);
   try {
@@ -19,7 +20,7 @@ export const insertFileNotes = async ({
       dept_id,
       name,
       content,
-      "yes",
+      sentforapproval,
       "created",
       type,
       category,
@@ -47,6 +48,8 @@ export const filenote = async (
   limit,
   searchcs,
   count,
+  categoryFilter,
+  typeFilter,
 ) => {
   try {
     // Map role to pending condition
@@ -58,6 +61,8 @@ export const filenote = async (
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
       initpr: "status LIKE 'pending%'",
+      initdc: "status LIKE 'pending%'",
+      pm: "status LIKE 'pending for pm'",
     };
 
     const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
@@ -95,14 +100,28 @@ export const filenote = async (
       }
       last7DaysConditions.push("deleted = 0");
 
-      if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
-        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
+      if (["initpr"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
         dashValues.push("Demob");
         last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
         dashValues.push(Number(project_code));
+      } else if (["cm", "pm"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(
+          `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
+        );
+        dashValues.push("FWA", "Demob");
+        last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
+        dashValues.push(Number(project_code));
+      } else if (["initdc"].some((r) => role.includes(r))) {
+        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
+        dashValues.push("FWA");
+        last7DaysConditions.push(`project_code = $${dashValues.length + 1}`);
+        dashValues.push(Number(project_code));
       } else {
-        last7DaysConditions.push(`category != $${dashValues.length + 1}`);
-        dashValues.push("Demob");
+        last7DaysConditions.push(
+          `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
+        );
+        dashValues.push("FWA", "Demob");
       }
 
       last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
@@ -116,7 +135,7 @@ export const filenote = async (
     } else {
       query = count
         ? "SELECT COUNT(*) FROM file_note"
-        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at FROM file_note";
+        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name FROM file_note";
     }
 
     // Add access control filter
@@ -136,23 +155,48 @@ export const filenote = async (
       values.push(filteredDepts);
     }
 
+    if (categoryFilter) {
+      whereConditions.push(`category = ($${values.length + 1})`);
+      values.push(categoryFilter);
+    }
+    if (typeFilter) {
+      whereConditions.push(`type = ($${values.length + 1})`);
+      values.push(typeFilter);
+    }
     // Always include non-deleted records
     whereConditions.push("deleted = 0");
 
     // Add category and project filter based on role
-    if (["initpr", "cm", "pm"].some((r) => role.includes(r))) {
-      whereConditions.push(`category = $${values.length + 1}`);
+    if (["initpr"].some((r) => role.includes(r))) {
+      whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
       whereConditions.push(`project_code = $${values.length + 1}`);
       values.push(Number(project_code));
-    } else {
-      whereConditions.push(`category != $${values.length + 1}`);
+    } else if (["cm", "pm"].some((r) => role.includes(r))) {
+      whereConditions.push(
+        `category IN ($${values.length + 1}, $${values.length + 2})`,
+      );
+      values.push("FWA", "Demob");
+      whereConditions.push(`project_code = $${values.length + 1}`);
+      values.push(Number(project_code));
+    } else if (["initdc"].some((r) => role.includes(r))) {
+      whereConditions.push(`category = $${values.length + 1}`);
+      values.push("FWA");
+      whereConditions.push(`project_code = $${values.length + 1}`);
+      values.push(Number(project_code));
+    } else if (["gm"].some((r) => role.includes(r))) {
+      whereConditions.push(`category NOT IN ($${values.length + 1})`);
       values.push("Demob");
+    } else {
+      whereConditions.push(
+        `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
+      );
+      values.push("FWA", "Demob");
     }
 
-    // Hide created status for non-admins
+    // Hide created and review status for non-admins
     if (!isadmin) {
-      whereConditions.push("status != 'created'");
+      whereConditions.push("status != 'created' AND status !='edit'");
     }
 
     // Add search filter
@@ -228,7 +272,13 @@ export const updatefilenote = async (
   type,
   category,
   action,
+  content,
+  attachments,
+  name,
 ) => {
+  const file = attachments?.map((a) => a.url);
+  const file_name = attachments?.map((a) => a.name);
+
   try {
     let query = "UPDATE file_note SET status = $1";
     let values = [status];
@@ -236,7 +286,7 @@ export const updatefilenote = async (
 
     let currentstatus = "";
     let nextstatus = statusExpected(role, action, type, category);
-    if (status != "review") {
+    if (status != "review" && status != null) {
       if (nextstatus == status && status != "pending for hod") {
         currentstatus = "approved";
       } else if (status == "pending for hod") {
@@ -262,10 +312,37 @@ export const updatefilenote = async (
       values.push(JSON.stringify([approvalData]));
       paramIndex++;
     }
-
-    if (sentforapproval !== undefined) {
+    if (sentforapproval == null) {
       query += `, sentforapproval = $${paramIndex}`;
       values.push(sentforapproval);
+      paramIndex++;
+    }
+
+    if (name != null) {
+      query += `, name = $${paramIndex}`;
+      values.push(name);
+      paramIndex++;
+    }
+
+    if (sentforapproval !== undefined && sentforapproval !== null) {
+      query += `, sentforapproval = $${paramIndex}`;
+      values.push(sentforapproval);
+      paramIndex++;
+    }
+    if (content !== undefined) {
+      query += `, content = $${paramIndex}`;
+      values.push(content);
+      paramIndex++;
+    }
+    if (file !== undefined) {
+      query += `, file = $${paramIndex}`;
+      values.push(file);
+      paramIndex++;
+    }
+
+    if (file_name !== undefined) {
+      query += `, file_name = $${paramIndex}`;
+      values.push(file_name);
       paramIndex++;
     }
     query += ` WHERE id = $${paramIndex} RETURNING *`;

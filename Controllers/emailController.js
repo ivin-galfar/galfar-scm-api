@@ -136,7 +136,7 @@ export const EmailNotify = async (req, res) => {
 
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
-        <p style="margin: 0 0 16px;">Dear Sir,</p>
+        <p style="margin: 0 0 16px;">Dear User,</p>
         <p style="margin: 0 0 16px;">The comparative statement  - <strong>${shipment_no}/${
           project ? project + "/" : ""
         }${cargo_details}</strong> is <strong>${
@@ -294,7 +294,7 @@ export const EmailNotify = async (req, res) => {
 
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
-        <p style="margin: 0 0 16px;">Dear Sir,</p>
+        <p style="margin: 0 0 16px;">Dear User,</p>
         <p style="margin: 0 0 16px;">The comparative statement  - <strong>${item}/${id}/${type}/${new Date(
           date,
         ).toLocaleDateString("en-AE", {
@@ -484,11 +484,11 @@ export const EmailNotify = async (req, res) => {
       <!-- Body -->
       <div style="padding: 24px; color: #333;">
         <!--[if mso]>
-          <p style="margin-top: 30px">Dear Sir,</p>
+          <p style="margin-top: 30px">Dear User,</p>
          <![endif]-->
 
        <!--[if !mso]><!-- -->
-        <p style="margin: 0 0 16px;">Dear Sir,</p>
+        <p style="margin: 0 0 16px;">Dear User,</p>
          <!--<![endif]-->
         <p style="margin: 0 0 16px;">The comparative statement (${type}) - <strong>${cs_id}/${
           projectvalue ? projectvalue + "/" : ""
@@ -574,15 +574,25 @@ export const EmailNotify = async (req, res) => {
     const nextRoleMap =
       type === "file_note"
         ? { initfn: "hod", hod: "fm", fm: "gm", gm: "ceo" }
-        : { initfn: "hod", initpr: "cm", hod: "gm", gm: "ceo" };
+        : {
+            initfn: "hod",
+            initpr: "cm",
+            initdc: "cm",
+            cm: "pm",
+            pm: "gm",
+            hod: "gm",
+            gm: "ceo",
+          };
     let nextRole = "";
     let ccemail = [];
 
     nextRole =
-      status === "approved" || status === "rejected"
-        ? category != "Demob"
+      status === "approved" || status === "rejected" || status === "review"
+        ? category != "Demob" && category != "FWA"
           ? "initfn"
-          : "initpr"
+          : category == "FWA"
+            ? "initdc"
+            : "initpr"
         : nextRoleMap[role] || null;
 
     let recipients = [];
@@ -598,7 +608,7 @@ export const EmailNotify = async (req, res) => {
               ...(await getMultipleEmailsByRole(["initfn"], dept_id)),
             );
 
-            if (status !== "rejected") {
+            if (status !== "rejected" && status !== "review") {
               recipients = await getMultipleEmailsByRole(["fm"], dept_id);
             } else {
               recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
@@ -608,17 +618,21 @@ export const EmailNotify = async (req, res) => {
             recipients = await getMultipleEmailsByRole(nextRole, dept_id);
           }
         } else if (type == "ioc") {
-          if (status !== "rejected") {
+          if (status !== "rejected" && status !== "review") {
             recipients = await getMultipleEmailsByRole(["fm"], dept_id);
           }
 
-          if (status == "rejected") {
+          if (status == "rejected" || status == "review") {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
           }
           if (
-            (category == "Insurance" || category == "FC" || category == "PR") &&
-            status !== "rejected"
+            (category == "Insurance" ||
+              category == "FC" ||
+              category == "PR" ||
+              category == "DPR") &&
+            status !== "rejected" &&
+            status !== "review"
           ) {
             ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
             ccemail.push(
@@ -628,7 +642,10 @@ export const EmailNotify = async (req, res) => {
         }
       } else if (nextRole == "initpr") {
         recipients = await getEmailsByRole(nextRole, dept_id, project_code);
-        if (status != "rejected") {
+        recipients.push(
+          ...(await getEmailsByRole("inith", dept_id, project_code)),
+        );
+        if (status != "rejected" && status !== "review") {
           ccemail.push(
             ...(await getMultipleEmailsByRole(
               ["pm", "spm", "pd", "cm", "scm"],
@@ -637,6 +654,10 @@ export const EmailNotify = async (req, res) => {
               project_code,
             )),
           );
+          ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+          ccemail.push(...(await getMultipleEmailsByRole(["gm"], dept_id)));
+        } else {
+          ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
         }
       } else {
         recipients = await getEmailsByRole(nextRole, dept_id, project_code);
@@ -672,7 +693,9 @@ export const EmailNotify = async (req, res) => {
         to: recipients,
         cc: ccemail,
         subject: `${type == "file_note" ? "File Note" : "IOC"}/${name}/${category}/${doc_no} - ${
-          nextRole === "initfn" || nextRole === "initpr"
+          nextRole === "initfn" ||
+          nextRole === "initpr" ||
+          nextRole === "initdc"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : status == "review"
               ? "Under Review"
@@ -722,7 +745,7 @@ export const EmailNotify = async (req, res) => {
 
           <!-- Body -->
           <div style="padding: 24px; color: #333;">
-            <p style="margin: 0 0 16px;">Dear Sir,</p>
+            <p style="margin: 0 0 16px;">Dear User,</p>
             <p style="margin: 0 0 16px;">The FN/IOC  - <strong>${doc_no}/${name}/${type}/${new Date(
               created_at,
             ).toLocaleDateString("en-AE", {
