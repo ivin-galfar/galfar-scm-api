@@ -249,8 +249,10 @@ export const fetchtotalstatements = async (
       query += ` AND status != 'created' AND status IS NOT NULL`;
     }
     if (emailcron) {
-      query += ` AND created_at >= date_trunc('month', CURRENT_DATE)
-             AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'`;
+      query += `
+    AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
+    AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
+  `;
     }
     const { rows } = await pool.query(query, values);
     return rows[0];

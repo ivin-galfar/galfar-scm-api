@@ -199,8 +199,9 @@ export const totalReceipts = async (
       values.push(statusfilter);
     }
     if (emailcron) {
-      query += ` AND created_at >= date_trunc('month', CURRENT_DATE)
-             AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'`;
+      query += `
+        AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
+        AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'`;
     }
 
     const { rows } = await pool.query(query, values);
@@ -474,8 +475,11 @@ export const getEmailByDept = async (dept) => {
     dept_code = 2;
   }
   try {
-    const query = `SELECT email from users WHERE dept_code @> $1::int[] AND is_valid = true`;
-    const values = [[dept_code]];
+    let query = `SELECT email from users WHERE dept_code @> $1::int[] AND is_valid = true`;
+    let values = [[dept_code]];
+    if (dept.includes("Plant")) {
+      query += ` AND role && ARRAY['gm', 'ceo', 'hod', 'inith', 'inita']`;
+    }
     const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
