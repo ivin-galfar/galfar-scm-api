@@ -106,7 +106,7 @@ export const filenote = async (
         last7DaysConditions.push(
           `project_code = ANY($${dashValues.length + 1})`,
         );
-        dashValues.push([...project_code].map(Number));
+        dashValues.push(project_code);
       } else if (["cm", "pm"].some((r) => role.includes(r))) {
         last7DaysConditions.push(
           `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
@@ -115,14 +115,14 @@ export const filenote = async (
         last7DaysConditions.push(
           `project_code = ANY($${dashValues.length + 1})`,
         );
-        dashValues.push([...project_code].map(Number));
+        dashValues.push(project_code);
       } else if (["initdc"].some((r) => role.includes(r))) {
         last7DaysConditions.push(`category = $${dashValues.length + 1}`);
         dashValues.push("FWA");
         last7DaysConditions.push(
           `project_code = ANY($${dashValues.length + 1})`,
         );
-        dashValues.push([...project_code].map(Number));
+        dashValues.push(project_code);
       } else {
         last7DaysConditions.push(
           `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
@@ -177,19 +177,19 @@ export const filenote = async (
       whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push([...project_code].map(Number));
+      values.push(project_code);
     } else if (["cm", "pm"].some((r) => role.includes(r))) {
       whereConditions.push(
         `category IN ($${values.length + 1}, $${values.length + 2})`,
       );
       values.push("FWA", "Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push([...project_code].map(Number));
+      values.push(project_code);
     } else if (["initdc"].some((r) => role.includes(r))) {
       whereConditions.push(`category = $${values.length + 1}`);
       values.push("FWA");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push([...project_code].map(Number));
+      values.push(project_code);
     } else if (["gm"].some((r) => role.includes(r))) {
       whereConditions.push(`category NOT IN ($${values.length + 1})`);
       values.push("Demob");

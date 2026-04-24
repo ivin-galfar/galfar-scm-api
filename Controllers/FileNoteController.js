@@ -53,8 +53,8 @@ export const fetchfnids = async (req, res) => {
     categoryFilter,
     typeFilter,
   } = req.query;
-  const project_code = req.query["project_code[]"];
   const roles = req.query?.role.split(",");
+  const project_code = req.query?.project_code.split(",");
 
   const department_id = req.query?.dept_id.split(",");
   const isadmin = req.query.isadmin === "true";
