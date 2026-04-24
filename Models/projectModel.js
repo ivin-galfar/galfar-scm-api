@@ -5,7 +5,6 @@ export const projectdetails = async () => {
     const activeprojects = await pool.query(
       "SELECT DISTINCT ON (project) * FROM project_users where status ='active' ORDER BY project",
     );
-    console.log(activeprojects.rows);
 
     return activeprojects.rows;
   } catch (error) {
@@ -20,15 +19,12 @@ export const InsertProjectdetails = async (
   name,
   email,
 ) => {
-  console.log("coming");
-
   try {
     const query =
       "INSERT INTO project_users (role,project,status, name, email) VALUES ($1,$2,$3,$4,$5) RETURNING *";
     const values = [requiredrole, project, status, name, email];
 
     const { rows } = await pool.query(query, values);
-    console.log(rows);
 
     return rows;
   } catch (error) {
