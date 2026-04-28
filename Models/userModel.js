@@ -66,7 +66,7 @@ export const getEmailsByRole = async (
       values.push(is_admin);
       index++;
     }
-    if (role == "cm" || role == "pm" || role == "initpr") {
+    if (role == "cm" || role == "pm" || role == "initpr" || role == "initdc") {
       query += ` AND $${index} = ANY(pr_code)`;
       values.push(project_code);
       index++;
