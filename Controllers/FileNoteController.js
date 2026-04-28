@@ -5,6 +5,8 @@ import {
   onefilenote,
   updatefilenote,
   softdeletefn,
+  insertNewCategory,
+  fetchCategories,
 } from "../Models/FileNoteModel.js";
 
 export const AddFileNotes = async (req, res) => {
@@ -158,6 +160,32 @@ export const deletefn = async (req, res) => {
   try {
     const deletedfn = await softdeletefn(fnid);
     return res.status(200).json(deletedfn);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const addCategory = async (req, res) => {
+  const { dept_id, type, category, status } = req.body;
+
+  try {
+    const addedCategories = await insertNewCategory(
+      dept_id,
+      type,
+      category,
+      status,
+    );
+    return res.status(200).json(addedCategories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const fetchAllCategories = async (req, res) => {
+  const { dept_id } = req.query;
+  try {
+    const categories = await fetchCategories(dept_id);
+    return res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

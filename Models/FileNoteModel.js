@@ -392,3 +392,28 @@ export const softdeletefn = async (fnid) => {
     throw error;
   }
 };
+
+export const insertNewCategory = async (dept_id, type, category, status) => {
+  try {
+    let query =
+      "INSERT into fn_ioc_categories (dept_id, type, category, status) VALUES ($1, $2, $3, $4) RETURNING *";
+    let values = [dept_id, type, category, status];
+    const { rows } = await pool.query(query, values);
+
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchCategories = async (dept_id) => {
+  try {
+    let query =
+      "SELECT * FROM fn_ioc_categories WHERE dept_id = $1 AND status='active'";
+    let values = [dept_id];
+    const { rows } = await pool.query(query, values);
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
