@@ -574,6 +574,10 @@ export const EmailNotify = async (req, res) => {
       type === "file_note" && ["TFW", "General"].includes(category)
         ? "gm"
         : "fm";
+    const iocsubrole =
+      type === "ioc" && category == "FWA" && project_code !== 101501
+        ? "pm"
+        : "gm";
     const nextRoleMap =
       type === "file_note"
         ? { initfn: "hod", hod: filenotesubrole, fm: "gm", gm: "ceo" }
@@ -581,7 +585,7 @@ export const EmailNotify = async (req, res) => {
             initfn: "hod",
             initpr: "cm",
             initdc: "cm",
-            cm: "pm",
+            cm: iocsubrole,
             pm: "gm",
             hod: "gm",
             gm: "ceo",

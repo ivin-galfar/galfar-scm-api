@@ -281,6 +281,7 @@ export const updatefilenote = async (
   content,
   attachments,
   name,
+  project_code,
 ) => {
   const file = attachments?.map((a) => a.url);
   const file_name = attachments?.map((a) => a.name);
@@ -291,7 +292,7 @@ export const updatefilenote = async (
     let paramIndex = 2;
 
     let currentstatus = "";
-    let nextstatus = statusExpected(role, action, type, category);
+    let nextstatus = statusExpected(role, action, type, category, project_code);
     if (status != "review" && status != null) {
       if (nextstatus == status && status != "pending for hod") {
         currentstatus = "approved";

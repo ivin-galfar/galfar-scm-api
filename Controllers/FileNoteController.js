@@ -122,6 +122,7 @@ export const updatefnvalue = async (req, res) => {
     content,
     attachments,
     name,
+    project_code,
   } = req.body;
 
   try {
@@ -137,6 +138,7 @@ export const updatefnvalue = async (req, res) => {
       content,
       attachments,
       name,
+      project_code,
     );
 
     return res.status(200).json(fnidvalue);
