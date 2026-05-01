@@ -124,10 +124,12 @@ export const filenote = async (
         );
         dashValues.push(project_code);
       } else {
-        last7DaysConditions.push(
-          `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
-        );
-        dashValues.push("FWA", "Demob");
+        if (!role.includes("gm")) {
+          last7DaysConditions.push(
+            `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
+          );
+          dashValues.push("FWA", "Demob");
+        }
       }
 
       last7DaysConditions.push("created_at >= NOW() - INTERVAL '7 days'");
@@ -190,14 +192,13 @@ export const filenote = async (
       values.push("FWA");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
-    } else if (["gm"].some((r) => role.includes(r))) {
-      whereConditions.push(`category NOT IN ($${values.length + 1})`);
-      values.push("Demob");
     } else {
-      whereConditions.push(
-        `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
-      );
-      values.push("FWA", "Demob");
+      if (!role.includes("gm")) {
+        whereConditions.push(
+          `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
+        );
+        values.push("FWA", "Demob");
+      }
     }
 
     // Hide created and review status for non-admins
