@@ -143,8 +143,15 @@ export const getEmailsByProject = async (project) => {
     throw new Error("Invalid project provided");
   }
   try {
-    const query = "SELECT email from users WHERE $1 = ANY(pr_code)";
-    const params = [project];
+    const query = `
+    SELECT email 
+    FROM users 
+    WHERE $1 = ANY(pr_code) 
+      AND $2::text = ANY(role)
+      AND is_valid = true
+  `;
+
+    const params = [project, "pm"];
     const result = await pool.query(query, params);
 
     return result.rows.map((r) => r.email);
