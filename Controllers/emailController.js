@@ -662,6 +662,14 @@ export const EmailNotify = async (req, res) => {
             )),
           );
           ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
+          ccemail.push(
+            ...(await getMultipleEmailsByRole(
+              ["view"],
+              dept_id,
+              false,
+              project_code,
+            )),
+          );
           ccemail.push(...(await getMultipleEmailsByRole(["gm"], dept_id)));
         } else {
           ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
@@ -776,7 +784,7 @@ export const EmailNotify = async (req, res) => {
                   style="padding:12px 24px; font-weight:bold; font-size:16px;">
                 <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
                   style="color:#ffffff; text-decoration:none; display:inline-block;">
-                  View Comparative Statement
+                  View Document
                 </a>
               </td>
 
@@ -788,7 +796,7 @@ export const EmailNotify = async (req, res) => {
             <div style="text-align: center; margin: 30px 0;">
                 <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
                  style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-                View Comparative Statement
+                View Document
               </a>
               </div>
               <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
