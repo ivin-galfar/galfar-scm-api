@@ -200,7 +200,7 @@ export const filenote = async (
       whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
     } else {
-      if (!role.includes("gm")) {
+      if (!role.includes("gm") && !role.includes("initfn")) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
         );
