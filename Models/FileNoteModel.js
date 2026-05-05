@@ -60,6 +60,7 @@ export const filenote = async (
       fm: "status = 'pending for sfm'",
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
+      view: "status LIKE 'pending%'",
       initpr: "status LIKE 'pending%'",
       initdc: "status LIKE 'pending%'",
       pm: "status LIKE 'pending for pm'",
@@ -123,6 +124,9 @@ export const filenote = async (
           `project_code = ANY($${dashValues.length + 1})`,
         );
         dashValues.push(project_code);
+      } else if (role.includes("view")) {
+        last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
+        dashValues.push("Demob");
       } else {
         if (!role.includes("gm")) {
           last7DaysConditions.push(
@@ -192,8 +196,11 @@ export const filenote = async (
       values.push("FWA");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
+    } else if (role.includes("view")) {
+      whereConditions.push(`category IN ($${values.length + 1})`);
+      values.push("Demob");
     } else {
-      if (!role.includes("gm")) {
+      if (!role.includes("gm") && !role.includes("initfn")) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
         );
