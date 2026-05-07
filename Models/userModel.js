@@ -66,7 +66,13 @@ export const getEmailsByRole = async (
       values.push(is_admin);
       index++;
     }
-    if (role == "cm" || role == "pm" || role == "initpr" || role == "initdc") {
+    if (
+      role == "cm" ||
+      role == "pm" ||
+      role == "pd" ||
+      role == "initpr" ||
+      role == "initdc"
+    ) {
       query += ` AND $${index} = ANY(pr_code)`;
       values.push(project_code);
       index++;
@@ -138,7 +144,7 @@ export const getMultipleEmailsByRole = async (
   }
 };
 
-export const getEmailsByProject = async (project) => {
+export const getEmailsByProject = async (project, isPdProject = false) => {
   if (!project) {
     throw new Error("Invalid project provided");
   }
@@ -151,7 +157,7 @@ export const getEmailsByProject = async (project) => {
       AND is_valid = true
   `;
 
-    const params = [project, "pm"];
+    const params = [project, isPdProject ? "pd" : "pm"];
     const result = await pool.query(query, params);
 
     return result.rows.map((r) => r.email);

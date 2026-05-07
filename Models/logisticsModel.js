@@ -320,6 +320,7 @@ export const updateCSStatus = async (
   recommendation_reason,
   comments_incharge,
   comments_pm,
+  comments_pd,
   comments_gm,
   comments_fm,
   comments_ceo,
@@ -364,6 +365,11 @@ export const updateCSStatus = async (
     if (comments_pm !== undefined && comments_pm !== null) {
       query += `, comment_pm = $${paramIndex}`;
       params.push(comments_pm);
+      paramIndex++;
+    }
+    if (comments_pd !== undefined && comments_pd !== null) {
+      query += `, comment_pd = $${paramIndex}`;
+      params.push(comments_pd);
       paramIndex++;
     }
     if (comments_gm !== undefined && comments_gm !== null) {
