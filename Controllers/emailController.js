@@ -588,7 +588,7 @@ export const EmailNotify = async (req, res) => {
         ? "gm"
         : "fm";
     const iocsubrole =
-      type === "ioc" && category == "FWA" && project_code !== 101501
+      type === "ioc" && category == "FWA" && project_code !== 1501
         ? "pm"
         : "gm";
     const PD_PROJECTS = [7102, 7104, 7106];

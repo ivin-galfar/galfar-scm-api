@@ -23,6 +23,7 @@ export const AddBuyRentStatements = async (req, res) => {
     dp_rate,
     is_included_maintain_cost_rent,
     is_included_op_cost_rent,
+    dp_year,
   } = req.body.formData;
 
   for (const [key, value] of Object.entries(formData)) {
@@ -50,7 +51,7 @@ export const AddBuyRentStatements = async (req, res) => {
   };
   formData.tenure_months = fin_tenure * 12;
   formData.principal_cost = unit_price * no_of_units;
-
+  formData.dp_months = dp_year * 12;
   formData.monthly_installment =
     int_rate == 0
       ? 0
@@ -140,9 +141,14 @@ export const AddBuyRentStatements = async (req, res) => {
   let payback = {};
 
   payback.cost_in_buying_without_main =
-    formData.principal_with_interest_buy + formData.op_cost_tenure;
+    formData.principal_with_interest_buy +
+    op_cost * no_of_units * formData.dp_months;
 
-  payback.cost_in_buying_with_main = formData.cash_outflow_buying;
+  payback.cost_in_buying_with_main =
+    formData.principal_with_interest_buy +
+    op_cost * (no_of_units * formData.dp_months) +
+    formData.principal_cost * ((maint_yearly / 100) * dp_year);
+
   payback.period_months_without_main =
     formData.total_monthly_rental > 0
       ? payback.cost_in_buying_without_main / formData.total_monthly_rental
@@ -245,6 +251,7 @@ export const updateBuyRentStatementValues = async (req, res) => {
     dp_rate,
     is_included_maintain_cost_rent,
     is_included_op_cost_rent,
+    dp_year,
   } = req.body.formData;
   for (const [key, value] of Object.entries(formData)) {
     if (key === "file" || key === "filename") continue;
@@ -271,6 +278,7 @@ export const updateBuyRentStatementValues = async (req, res) => {
   };
   formData.tenure_months = fin_tenure * 12;
   formData.principal_cost = unit_price * no_of_units;
+  formData.dp_months = dp_year * 12;
 
   formData.monthly_installment =
     int_rate == 0
@@ -360,9 +368,14 @@ export const updateBuyRentStatementValues = async (req, res) => {
   let payback = {};
 
   payback.cost_in_buying_without_main =
-    formData.principal_with_interest_buy + formData.op_cost_tenure;
+    formData.principal_with_interest_buy +
+    op_cost * no_of_units * formData.dp_months;
 
-  payback.cost_in_buying_with_main = formData.cash_outflow_buying;
+  payback.cost_in_buying_with_main =
+    formData.principal_with_interest_buy +
+    op_cost * (no_of_units * formData.dp_months) +
+    formData.principal_cost * ((maint_yearly / 100) * dp_year);
+
   payback.period_months_with_main =
     formData.total_monthly_rental > 0
       ? payback.cost_in_buying_with_main / formData.total_monthly_rental

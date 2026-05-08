@@ -71,13 +71,13 @@ export const statusExpected = (
   } else if (
     roles.includes("cm") &&
     category == "FWA" &&
-    project_code != 101501
+    project_code !== 1501
   ) {
     statustext = "pending for pm";
   } else if (
     roles.includes("cm") &&
     category == "FWA" &&
-    project_code == 101501
+    project_code == 1501
   ) {
     statustext = "pending for gm";
   } else if (roles.includes("pm") && category == "FWA" && SpecialProjects) {
