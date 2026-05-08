@@ -595,7 +595,7 @@ export const EmailNotify = async (req, res) => {
     const pmpdrole =
       type === "ioc" &&
       category == "FWA" &&
-      project_code !== 101501 &&
+      project_code !== 1501 &&
       PD_PROJECTS.includes(project_code)
         ? "pd"
         : "gm";
