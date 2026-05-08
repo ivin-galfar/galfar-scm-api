@@ -8,6 +8,7 @@ import {
 import { emaillogs, emaillogsfn } from "../Models/emailModel.js";
 import pmMap from "../Utils/pmmapping.js";
 import { sentemail } from "../Models/logisticsModel.js";
+import { PmCmNames } from "../Models/projectModel.js";
 
 export const EmailNotify = async (req, res) => {
   const { dept = "", type = "", category = "" } = req.query || {};
@@ -29,7 +30,11 @@ export const EmailNotify = async (req, res) => {
     ];
     let project =
       typeof project_code === "string" ? Number(project_code) : project_code;
-    let pm = pmMap[project]?.name || "";
+
+    let pm = role === "pm" ? (await PmCmNames(role, project_code))?.[0] : "";
+
+    let pd = role === "pd" ? (await PmCmNames(role, project_code))?.[0] : "";
+
     if (role === "pm") {
       if (!definedprojects.includes(project)) {
         return res.status(400).json({
@@ -45,10 +50,15 @@ export const EmailNotify = async (req, res) => {
       fm: 4,
       ceo: 5,
     };
+
+    const PD_PROJECTS = [7102, 7104, 7106];
+    const isPdProject = PD_PROJECTS.includes(project);
+
     const nextRoleMap = {
       initlg: "incharge",
       incharge: "pm",
-      pm: "gm",
+      pm: isPdProject ? "pd" : "gm",
+      pd: "gm",
       gm: "fm",
       fm: "ceo",
     };
@@ -60,11 +70,13 @@ export const EmailNotify = async (req, res) => {
       nextRole = nextRoleMap[role];
     }
     let recipients = [];
-    if (nextRole != "pm") {
+    if (nextRole != "pm" && nextRole != "pd") {
       recipients = await getEmailsByRole(nextRole);
     } else {
       try {
-        recipients = project ? await getEmailsByProject(project) : [];
+        recipients = project
+          ? await getEmailsByProject(project, isPdProject)
+          : [];
       } catch (error) {
         throw error;
       }
@@ -193,6 +205,7 @@ export const EmailNotify = async (req, res) => {
         role: role,
         datetime: new Date(),
         ...(role === "pm" && { pm }),
+        ...(role === "pd" && { pd }),
       };
       const [emailInfo] = await Promise.all([
         transporter.sendMail(mailOptions),
@@ -578,6 +591,15 @@ export const EmailNotify = async (req, res) => {
       type === "ioc" && category == "FWA" && project_code !== 1501
         ? "pm"
         : "gm";
+    const PD_PROJECTS = [7102, 7104, 7106];
+    const pmpdrole =
+      type === "ioc" &&
+      category == "FWA" &&
+      project_code !== 1501 &&
+      PD_PROJECTS.includes(project_code)
+        ? "pd"
+        : "gm";
+
     const nextRoleMap =
       type === "file_note"
         ? { initfn: "hod", hod: filenotesubrole, fm: "gm", gm: "ceo" }
@@ -586,7 +608,8 @@ export const EmailNotify = async (req, res) => {
             initpr: "cm",
             initdc: "cm",
             cm: iocsubrole,
-            pm: "gm",
+            pm: pmpdrole,
+            pd: "gm",
             hod: "gm",
             gm: "ceo",
           };

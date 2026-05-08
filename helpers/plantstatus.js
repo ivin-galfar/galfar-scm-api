@@ -20,6 +20,7 @@ export const statusExpected = (
   type,
   category,
   project_code,
+  SpecialProjects,
 ) => {
   let statustext = "";
   const roles = currentrole.map((r) => r.toLowerCase());
@@ -79,7 +80,13 @@ export const statusExpected = (
     project_code == 1501
   ) {
     statustext = "pending for gm";
-  } else if (roles.includes("pm") && category == "FWA") {
+  } else if (roles.includes("pm") && category == "FWA" && SpecialProjects) {
+    statustext = "pending for pd";
+  } else if (
+    category === "FWA" &&
+    ((roles.includes("pm") && !SpecialProjects) ||
+      (roles.includes("pd") && SpecialProjects))
+  ) {
     statustext = "pending for gm";
   } else if (roles.includes("gm") && category == "FWA") {
     statustext = "approved";
