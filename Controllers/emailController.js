@@ -591,6 +591,15 @@ export const EmailNotify = async (req, res) => {
       type === "ioc" && category == "FWA" && project_code !== 101501
         ? "pm"
         : "gm";
+    const PD_PROJECTS = [7102, 7104, 7106];
+    const pmpdrole =
+      type === "ioc" &&
+      category == "FWA" &&
+      project_code !== 101501 &&
+      PD_PROJECTS.includes(project_code)
+        ? "pd"
+        : "gm";
+
     const nextRoleMap =
       type === "file_note"
         ? { initfn: "hod", hod: filenotesubrole, fm: "gm", gm: "ceo" }
@@ -599,7 +608,8 @@ export const EmailNotify = async (req, res) => {
             initpr: "cm",
             initdc: "cm",
             cm: iocsubrole,
-            pm: "gm",
+            pm: pmpdrole,
+            pd: "gm",
             hod: "gm",
             gm: "ceo",
           };

@@ -64,6 +64,7 @@ export const filenote = async (
       initpr: "status LIKE 'pending%'",
       initdc: "status LIKE 'pending%'",
       pm: "status LIKE 'pending for pm'",
+      pd: "status LIKE 'pending for pd'",
     };
 
     const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
@@ -108,7 +109,7 @@ export const filenote = async (
           `project_code = ANY($${dashValues.length + 1})`,
         );
         dashValues.push(project_code);
-      } else if (["cm", "pm"].some((r) => role.includes(r))) {
+      } else if (["cm", "pm", "pd"].some((r) => role.includes(r))) {
         last7DaysConditions.push(
           `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
         );
@@ -184,7 +185,7 @@ export const filenote = async (
       values.push("Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
-    } else if (["cm", "pm"].some((r) => role.includes(r))) {
+    } else if (["cm", "pm", "pd"].some((r) => role.includes(r))) {
       whereConditions.push(
         `category IN ($${values.length + 1}, $${values.length + 2})`,
       );
@@ -293,14 +294,22 @@ export const updatefilenote = async (
 ) => {
   const file = attachments?.map((a) => a.url);
   const file_name = attachments?.map((a) => a.name);
-
+  const SPECIAL_PROJECTS = [7102, 7104, 7106];
+  const SpecialProjects = SPECIAL_PROJECTS.includes(Number(project_code));
   try {
     let query = "UPDATE file_note SET status = $1";
     let values = [status];
     let paramIndex = 2;
 
     let currentstatus = "";
-    let nextstatus = statusExpected(role, action, type, category, project_code);
+    let nextstatus = statusExpected(
+      role,
+      action,
+      type,
+      category,
+      project_code,
+      SpecialProjects,
+    );
     if (status != "review" && status != null) {
       if (nextstatus == status && status != "pending for hod") {
         currentstatus = "approved";
