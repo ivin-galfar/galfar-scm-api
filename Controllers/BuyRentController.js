@@ -134,7 +134,7 @@ export const AddBuyRentStatements = async (req, res) => {
     formData.maint_cost_tenure +
     formData.op_cost_tenure;
 
-  accounting.total_expenses_rentals = formData.total_rental;
+  accounting.total_expenses_rentals = formData.cash_outflow_renting;
 
   accounting.accounting_gain_loss =
     accounting.total_expenses_rentals - accounting.total_expenses_buying;
@@ -361,7 +361,7 @@ export const updateBuyRentStatementValues = async (req, res) => {
     formData.maint_cost_tenure +
     formData.op_cost_tenure;
 
-  accounting.total_expenses_rentals = formData.total_rental;
+  accounting.total_expenses_rentals = formData.cash_outflow_renting;
 
   accounting.accounting_gain_loss =
     accounting.total_expenses_rentals - accounting.total_expenses_buying;
