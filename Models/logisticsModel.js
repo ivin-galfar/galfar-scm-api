@@ -433,7 +433,7 @@ export const sentemail = async (cs_id, email_for, approverdetails) => {
 export const getappoverdetails = async (cs_id) => {
   try {
     let query =
-      "SELECT id,approver_info,project,status,comment_in,comment_pm,comment_gm,comment_fm,comment_ceo,createdby FROM log_statements WHERE id = $1";
+      "SELECT id,approver_info,project,status,comment_in,comment_pm,comment_pd,comment_gm,comment_fm,comment_ceo,createdby FROM log_statements WHERE id = $1";
     let params = [cs_id];
     const { rows } = await pool.query(query, params);
     return rows[0];
