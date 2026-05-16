@@ -169,8 +169,6 @@ export const getEmailsByProject = async (project, isPdProject = false) => {
   }
 };
 export const updateDocRead = async (click, email) => {
-  console.log(email);
-
   try {
     const query = `
       UPDATE users 
