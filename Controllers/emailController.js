@@ -103,10 +103,12 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
-        subject: `Comparative Statement (Logistics) - ${
+        subject: `Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
+          project ? project + " : " : ""
+        } ${
           nextRole === "initlg"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval"
+            : "Approval Required"
         }`,
         html: `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
@@ -675,6 +677,9 @@ export const EmailNotify = async (req, res) => {
         recipients.push(
           ...(await getEmailsByRole("inith", dept_id, project_code)),
         );
+        recipients.push(
+          ...(await getEmailsByRole("view", dept_id, project_code)),
+        );
         if (status != "rejected" && status !== "review") {
           ccemail.push(
             ...(await getMultipleEmailsByRole(
@@ -730,7 +735,7 @@ export const EmailNotify = async (req, res) => {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
         cc: ccemail,
-        subject: `${type == "file_note" ? "File Note" : "IOC"}/${name}/${category}/${doc_no} - ${
+        subject: `${type == "file_note" ? "File Note" : "IOC"}/${name}/${category}/${project_code}/${doc_no} - ${
           nextRole === "initfn" ||
           nextRole === "initpr" ||
           nextRole === "initdc"
@@ -784,7 +789,7 @@ export const EmailNotify = async (req, res) => {
           <!-- Body -->
           <div style="padding: 24px; color: #333;">
             <p style="margin: 0 0 16px;">Dear User,</p>
-            <p style="margin: 0 0 16px;">The FN/IOC  - <strong>${doc_no}/${name}/${type}/${new Date(
+            <p style="margin: 0 0 16px;">The FN/IOC  - <strong>${doc_no}/${name}/${type}/${project_code}/${new Date(
               created_at,
             ).toLocaleDateString("en-AE", {
               timeZone: "Asia/Dubai",

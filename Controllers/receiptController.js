@@ -76,10 +76,11 @@ export const fetchReceipts = async (req, res) => {
     limit,
     statusfilter,
     multiStatus,
-    search,
+    searchcsno,
+    searchcsname,
     expectedStatuses,
+    showinactive,
   } = req.query;
-
   let Statuses = [];
   if (expectedStatuses) {
     Statuses = req.query.expectedStatuses.split(",");
@@ -88,7 +89,7 @@ export const fetchReceipts = async (req, res) => {
   if (multiStatus) {
     multiStatuses = multiStatus.split(",");
   }
-
+  const showInactive = showinactive === "true";
   try {
     const formData = await allReceipts(
       type,
@@ -97,8 +98,10 @@ export const fetchReceipts = async (req, res) => {
       limit,
       statusfilter,
       multiStatuses,
-      search,
+      searchcsno,
+      searchcsname,
       Statuses,
+      showInactive,
     );
 
     // const tableData = await allTableData();
@@ -122,8 +125,16 @@ export const fetchReceipts = async (req, res) => {
 };
 
 export const fetchallreceipts = async (req, res) => {
-  const { type, expectedStatuses, statusfilter, multiStatus, searchcs } =
-    req.query;
+  const {
+    type,
+    expectedStatuses,
+    statusfilter,
+    multiStatus,
+    searchcsno,
+    searchcsname,
+    showinactive,
+  } = req.query;
+  const showInactive = showinactive === "true";
 
   try {
     const count = await fetchallreceiptslogic(
@@ -131,7 +142,9 @@ export const fetchallreceipts = async (req, res) => {
       expectedStatuses,
       statusfilter,
       multiStatus,
-      searchcs,
+      searchcsno,
+      searchcsname,
+      showInactive,
     );
     return res.status(200).json({ receipts_count: count });
   } catch (error) {

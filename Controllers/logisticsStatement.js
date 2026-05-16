@@ -94,10 +94,16 @@ export const fetchLogisticsStatement = async (req, res) => {
 };
 
 export const fetchAllID = async (req, res) => {
-  const { module, ["project[]"]: project, ["role[]"]: role } = req.query;
+  const {
+    module,
+    ["project[]"]: project,
+    ["role[]"]: role,
+    showinactive,
+  } = req.query;
+  const showInactive = showinactive === "true";
 
   try {
-    const cs_id = await fetchAllCsid(module, role, project);
+    const cs_id = await fetchAllCsid(module, role, project, showInactive);
     return res.status(200).json(cs_id);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -107,21 +113,26 @@ export const fetchAllID = async (req, res) => {
 export const fetchAllCs = async (req, res) => {
   const {
     statusfilter,
-    searchcs,
+    searchcsno,
+    searchcsname,
     pageIndex,
     pageSize,
     role,
     ["project[]"]: project,
+    showinactive,
   } = req.query;
+  const showInactive = showinactive === "true";
 
   try {
     const cs_id = await fetchAllCsidvalues(
       statusfilter,
-      searchcs,
+      searchcsno,
+      searchcsname,
       pageIndex,
       pageSize,
       role,
       project == "1" ? "plant" : project,
+      showInactive,
     );
     return res.status(200).json(cs_id);
   } catch (error) {
@@ -130,14 +141,24 @@ export const fetchAllCs = async (req, res) => {
 };
 
 export const fetchCscount = async (req, res) => {
-  const { statusfilter, searchcs, role, ["project[]"]: project } = req.query;
+  const {
+    statusfilter,
+    searchcsno,
+    searchcsname,
+    role,
+    ["project[]"]: project,
+    showinactive,
+  } = req.query;
+  const showInactive = showinactive === "true";
 
   try {
     const { count } = await fetchtotalstatements(
       statusfilter,
       role,
-      searchcs,
+      searchcsno,
+      searchcsname,
       project == "1" ? "plant" : project,
+      showInactive,
     );
 
     return res.status(200).json({ receipts_count: count });

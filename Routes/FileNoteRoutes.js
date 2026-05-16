@@ -8,6 +8,7 @@ import {
   deletefn,
   addCategory,
   fetchAllCategories,
+  updateIoc,
 } from "../Controllers/FileNoteController.js";
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.route("/fetchdocno/").get(fetchfn);
 router.route("/fetchcategory").get(fetchAllCategories);
 router.route("/:fnid").get(fetchfnvalue);
 router.route("/updatefn/:fnid").put(updatefnvalue);
+router.route("/updatedemob/:fnid").put(updateIoc);
 router.route("/deletefn/:fnid").put(deletefn);
 router.route("/category").post(addCategory);
 

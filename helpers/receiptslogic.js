@@ -5,7 +5,9 @@ export const fetchallreceiptslogic = async (
   expectedStatuses,
   statusfilter,
   multiStatus,
-  searchcs,
+  searchcsno,
+  searchcsname,
+  showinactive,
   emailcron = false,
 ) => {
   let statuses = [];
@@ -25,7 +27,9 @@ export const fetchallreceiptslogic = async (
     statuses,
     statusfilter,
     multiStatuses,
-    searchcs,
+    searchcsno,
+    searchcsname,
+    showinactive,
     emailcron,
   );
 

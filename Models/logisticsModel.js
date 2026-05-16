@@ -176,20 +176,30 @@ export const fetchTableData = async (cs_id) => {
   }
 };
 
-export const fetchAllCsid = async (module, role, project) => {
+export const fetchAllCsid = async (module, role, project, showInactive) => {
   try {
     let query =
-      "SELECT id, status, project, created_at, cargo_details, createdby FROM log_statements WHERE deleted = 0";
+      "SELECT id, status, project, created_at, cargo_details, createdby FROM log_statements";
 
     let values = [];
-
+    let conditions = [];
     if ((role?.includes("pm") || role?.includes("hod")) && project) {
       const projects = Array.isArray(project) ? project : [project];
 
-      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      conditions.push(` project = ANY($${values.length + 1}::text[])`);
       values.push(projects.map(String));
     }
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
 
+    if (!role.includes("initlg")) {
+      conditions.push(` status != 'created' AND status IS NOT NULL`);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
+    }
     query += " ORDER BY id DESC";
 
     if (module?.startsWith("/lstatements")) {
@@ -198,7 +208,6 @@ export const fetchAllCsid = async (module, role, project) => {
     if (module?.startsWith("/dashboardlg")) {
       query += " LIMIT 100";
     }
-
     const { rows } = await pool.query(query, values);
     return rows;
   } catch (error) {
@@ -209,97 +218,131 @@ export const fetchAllCsid = async (module, role, project) => {
 export const fetchtotalstatements = async (
   statusfilter,
   role,
-  searchcs,
+  searchcsno,
+  searchcsname,
   project,
+  showInactive,
   emailcron = false,
 ) => {
   try {
-    let query = " SELECT COUNT(*) FROM log_statements where deleted=0";
+    let query = "SELECT COUNT(*) FROM log_statements";
     let values = [];
-
+    let conditions = [];
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
         if (emailcron) {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%pending%`);
         } else {
           if (role != "initlg") {
-            query += ` AND status LIKE ($${values.length + 1}::text)`;
+            conditions.push(` status LIKE ($${values.length + 1}::text)`);
             values.push(`%${role.toLowerCase()}`);
           } else {
-            query += ` AND status LIKE ($${values.length + 1}::text)`;
+            conditions.push(` status LIKE ($${values.length + 1}::text)`);
             values.push(`%pending%`);
           }
         }
       } else {
-        query += ` AND status = ($${values.length + 1})`;
+        conditions.push(` status = ($${values.length + 1})`);
         values.push(statusfilter.toLowerCase());
       }
     }
-    if (searchcs) {
-      query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
-      values.push(`%${searchcs}%`);
+    if (searchcsno) {
+      conditions.push(` shipment_no::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsno}%`);
+    }
+    if (searchcsname) {
+      conditions.push(` cargo_details::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsname}%`);
     }
     if (project && project.length > 0) {
       const projects = Array.isArray(project) ? project : [project];
-      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      conditions.push(` project = ANY($${values.length + 1}::text[])`);
       values.push(projects.map(String));
     }
     if (role != "initlg") {
-      query += ` AND status != 'created' AND status IS NOT NULL`;
+      conditions.push(` status != 'created' AND status IS NOT NULL`);
     }
+
     if (emailcron) {
-      query += `
-    AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
-    AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
-  `;
+      conditions.push(`
+     created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
+     created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
+  `);
     }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
+    }
+
     const { rows } = await pool.query(query, values);
     return rows[0];
   } catch (error) {
+    console.log(error);
+
     throw error;
   }
 };
 
 export const fetchAllCsidvalues = async (
   statusfilter,
-  searchcs,
+  searchcsno,
+  searchcsname,
   page,
   limit,
   role,
   project,
+  showInactive,
 ) => {
   try {
     const offset = page * limit;
 
     let values = [];
-    let query = "SELECT * FROM log_statements where deleted=0 ";
+    let conditions = [];
+    let query = "SELECT * FROM log_statements ";
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
         if (!role.includes("initlg")) {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%${role.toLowerCase()}`);
         } else {
-          query += ` AND status LIKE ($${values.length + 1})`;
+          conditions.push(` status LIKE ($${values.length + 1})`);
           values.push(`%pending%`);
         }
       } else {
-        query += ` AND status = ($${values.length + 1})`;
+        conditions.push(` status = ($${values.length + 1})`);
         values.push(statusfilter.toLowerCase());
       }
     }
-    if (searchcs) {
-      query += ` AND shipment_no::text LIKE ($${values.length + 1})`;
-      values.push(`%${searchcs}%`);
+    if (searchcsno) {
+      conditions.push(` shipment_no::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsno}%`);
+    }
+    if (searchcsname) {
+      conditions.push(` cargo_details::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsname}%`);
     }
 
     if (project && project.length > 0) {
-      query += ` AND project = ANY($${values.length + 1}::text[])`;
+      conditions.push(` project = ANY($${values.length + 1}::text[])`);
       values.push([project]);
     }
 
     if (role != "initlg") {
-      query += ` AND status != 'created' AND status IS NOT NULL`;
+      conditions.push(` status != 'created' AND status IS NOT NULL`);
+    }
+
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
     }
     query += ` ORDER BY id Desc LIMIT $${values.length + 1} OFFSET $${
       values.length + 2

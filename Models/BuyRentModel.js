@@ -112,10 +112,15 @@ export const fetchBrStatements = async (
   statusfilter = "All",
   page,
   limit,
-  searchcs,
+  searchcsno,
+  searchcsname,
+  showInactive,
 ) => {
   let pendingCondition = "";
   let last7DaysResult = [];
+  let conditions = [];
+  let values = [];
+
   if (role === "ceo") pendingCondition = "status = 'pending for ceo'";
   if (role === "gm") pendingCondition = "status = 'pending for gm'";
   if (role === "hod") pendingCondition = "status = 'pending for hod'";
@@ -132,6 +137,7 @@ export const fetchBrStatements = async (
         "status",
         "approver_info",
         "created_at",
+        "deleted",
       );
     }
 
@@ -140,9 +146,7 @@ export const fetchBrStatements = async (
     if (module != "/") {
       query = `
         SELECT ${selectColumns}
-        FROM buy_rent_statements
-        WHERE deleted = 0
-      `;
+        FROM buy_rent_statements`;
     } else {
       query = `
           SELECT
@@ -156,8 +160,8 @@ export const fetchBrStatements = async (
             ) AS pending_count,
             SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count,
             SUM(CASE WHEN status = 'review' THEN 1 ELSE 0 END) AS review_count
-          FROM buy_rent_statements
-          WHERE deleted = 0`;
+          FROM buy_rent_statements`;
+
       let last7DaysQuery = `
             SELECT 
               item,created_at,status
@@ -168,40 +172,48 @@ export const fetchBrStatements = async (
       const result = await pool.query(last7DaysQuery);
       last7DaysResult = result.rows;
     }
-
-    let values = [];
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
     if (role !== "inita") {
-      query += `
-    AND status IS NOT NULL
+      conditions.push(`
+     status IS NOT NULL
     AND status <> 'created'
-    AND status <> 'reverted'`;
+    AND status <> 'reverted'`);
     }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
         if (role == "inita") {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%pending%`);
         } else {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%${role.toLowerCase()}`);
         }
       } else {
-        query += ` AND status = ($${values.length + 1})`;
+        conditions.push(` status = ($${values.length + 1})`);
         values.push(statusfilter.toLowerCase());
       }
     }
-    if (searchcs) {
-      query += ` AND id::text LIKE ($${values.length + 1})`;
-      values.push(`%${searchcs}%`);
+    if (searchcsno) {
+      conditions.push(` id::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsno}%`);
     }
-
+    if (searchcsname) {
+      conditions.push(` item::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsname}%`);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
+    }
     if (module == "/dashboardbr") {
       query += ` ORDER BY id Desc LIMIT $${values.length + 1} OFFSET $${
         values.length + 2
       }`;
       values.push(limit, offset);
     } else if (module !== "/") {
-      query += ` ORDER BY id Desc LIMIT 50`;
+      conditions.push(` ORDER BY id Desc LIMIT 50`);
     }
 
     const { rows } = await pool.query(query, values);
@@ -216,40 +228,53 @@ export const fetchtotalBrStatements = async (
   module,
   role,
   statusfilter,
-  searchcs,
+  searchcsno,
+  searchcsname,
+  showInactive,
   fromCron = false,
 ) => {
   try {
     let query = `
       SELECT COUNT(*) as total
       FROM buy_rent_statements
-      WHERE deleted = 0
-    `;
-
+      `;
     let values = [];
+    let conditions = [];
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
     if (role !== "inita") {
-      query += `
-    AND status IS NOT NULL
+      conditions.push(`
+     status IS NOT NULL
     AND status <> 'created'
-     AND status <> 'reverted'`;
+     AND status <> 'reverted'`);
     }
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
         if (role == "inita") {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%pending%`);
         } else {
-          query += ` AND status LIKE ($${values.length + 1}::text)`;
+          conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%${role.toLowerCase()}`);
         }
       } else {
-        query += ` AND status = ($${values.length + 1})`;
+        conditions.push(` status = ($${values.length + 1})`);
         values.push(statusfilter.toLowerCase());
       }
     }
-    if (searchcs) {
-      query += ` AND id::text LIKE ($${values.length + 1})`;
-      values.push(`%${searchcs}%`);
+    if (searchcsno) {
+      conditions.push(` id::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsno}%`);
+    }
+    if (searchcsname) {
+      conditions.push(` item::text ILIKE ($${values.length + 1})`);
+      values.push(`%${searchcsname}%`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
     }
     const { rows } = await pool.query(query, values);
     return rows[0];
