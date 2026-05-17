@@ -7,6 +7,7 @@ import {
   softdeletefn,
   insertNewCategory,
   fetchCategories,
+  updateiocintimation,
 } from "../Models/FileNoteModel.js";
 
 export const AddFileNotes = async (req, res) => {
@@ -50,13 +51,16 @@ export const fetchfnids = async (req, res) => {
     statusfilter,
     page,
     limit,
-    searchcs,
+    searchcsname,
+    searchcsno,
     count,
     categoryFilter,
     typeFilter,
+    showinactive,
   } = req.query;
+
   const roles = req.query?.role.split(",");
-  const project_code = req.query?.project_code.split(",");
+  const project_code = req.query?.project_code.split(",").filter(Boolean);
 
   const department_id = req.query?.dept_id.split(",");
   const isadmin = req.query.isadmin === "true";
@@ -67,6 +71,10 @@ export const fetchfnids = async (req, res) => {
       updatedRoles = ["initpr"];
     } else if (roles.includes("initdc")) {
       updatedRoles = ["initdc"];
+    } else if (roles.includes("inith")) {
+      updatedRoles = ["inith"];
+    } else if (roles.includes("inita")) {
+      updatedRoles = ["inita"];
     } else if (roles.includes("initfn")) {
       updatedRoles = ["initfn"];
     }
@@ -84,10 +92,12 @@ export const fetchfnids = async (req, res) => {
       statusfilter,
       page,
       limit,
-      searchcs,
+      searchcsno,
+      searchcsname,
       count,
       categoryFilter,
       typeFilter,
+      showinactive,
     );
 
     return res.status(200).json(fnotes);
@@ -188,6 +198,18 @@ export const fetchAllCategories = async (req, res) => {
   try {
     const categories = await fetchCategories(dept_id);
     return res.status(200).json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateIoc = async (req, res) => {
+  const { fnid } = req.params;
+  const { flag } = req.body;
+
+  try {
+    const updateioc = await updateiocintimation(flag, fnid);
+    return res.status(200).json(updateioc);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

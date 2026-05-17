@@ -76,76 +76,154 @@ export const allReceipts = async (
   limit,
   statusfilter,
   multiStatuses,
-  search,
+  searchcsno,
+  searchcsname,
   Statuses,
+  showInactive,
 ) => {
-  const filterType = type === "null" || type == "" ? null : type;
+  const filterType = type === "null" || type === "" ? null : type;
+
   let values = [];
+  let conditions = [];
 
   try {
-    let query = `SELECT DISTINCT ON (r.id) r.id,r.type, r.hiringname, r.qty, r.status,r.sentforapproval,r.created_at,r.comments_count`;
+    let query = `
+      SELECT DISTINCT ON (r.id)
+        r.id,
+        r.type,
+        r.hiringname,
+        r.qty,
+        r.status,
+        r.sentforapproval,
+        r.created_at,
+        r.comments_count,
+        r.deleted
+    `;
+
     if (module?.startsWith("/dashboard")) {
-      query += ` ,COALESCE(
-        json_agg(
-          json_build_object(
-            'id',ad.id,
-            'role', ad.role,
-            'comments', ad.comments,
-            'timestamp', ad.timestamp,
-            'action',ad.action,
-            'rejectedby',ad.rejectedby
-          )
-        ) FILTER (WHERE ad.id IS NOT NULL),
-        '[]'
-      ) AS approverdetails`;
-    }
-    query +=
-      " FROM receipts r LEFT JOIN approverdetails ad ON ad.cs_id = r.id where r.deleted=0";
-    if (filterType) {
-      query += ` AND ($${values.length + 1}::text IS NULL OR r.type = $${
-        values.length + 1
-      })`;
-      values.push(filterType);
+      query += `
+        ,COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ad.id,
+              'role', ad.role,
+              'comments', ad.comments,
+              'timestamp', ad.timestamp,
+              'action', ad.action,
+              'rejectedby', ad.rejectedby
+            )
+          ) FILTER (WHERE ad.id IS NOT NULL),
+          '[]'
+        ) AS approverdetails
+      `;
     }
 
+    query += `
+      FROM receipts r
+      LEFT JOIN approverdetails ad
+      ON ad.cs_id = r.id 
+    `;
+
+    if (filterType) {
+      conditions.push(`r.type = $${values.length + 1}`);
+      values.push(filterType);
+    }
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
     if (module?.startsWith("/dashboard")) {
       const offset = page * limit;
       if (multiStatuses.length > 0) {
-        query += ` AND LOWER(r.status) = ANY($${values.length + 1})`;
+        conditions.push(`LOWER(r.status) = ANY($${values.length + 1})`);
+
         values.push(multiStatuses);
       } else {
-        query += ` AND ($${
-          values.length + 1
-        }::text[] IS NULL OR LOWER(r.status) = ANY($${
-          values.length + 1
-        }) OR (r.status IS NULL AND '' = ANY($${values.length + 1})))`;
+        conditions.push(`
+          (
+            $${values.length + 1}::text[] IS NULL
+            OR LOWER(r.status) = ANY($${values.length + 1})
+            OR (
+              r.status IS NULL
+              AND '' = ANY($${values.length + 1})
+            )
+          )
+        `);
+
         values.push(Statuses);
       }
 
       if (statusfilter) {
-        query += ` AND r.status = ($${values.length + 1})`;
+        conditions.push(`r.status = $${values.length + 1}`);
         values.push(statusfilter);
       }
-      if (search) {
-        query += ` AND r.id::text ILIKE $${values.length + 1} `;
-        values.push(`%${search}%`);
+
+      if (searchcsno) {
+        conditions.push(`r.id::text ILIKE $${values.length + 1}`);
+        values.push(`%${searchcsno}%`);
       }
 
-      query += " GROUP BY r.id ORDER BY r.id Desc";
-      query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+      if (searchcsname) {
+        conditions.push(`r.hiringname::text ILIKE $${values.length + 1}`);
+
+        values.push(`%${searchcsname}%`);
+      }
+
+      if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(" AND ")}`;
+      }
+
+      query += `
+        GROUP BY r.id
+        ORDER BY r.id DESC
+      `;
+
+      query += `
+        LIMIT $${values.length + 1}
+        OFFSET $${values.length + 2}
+      `;
 
       values.push(limit, offset);
     } else if (module?.startsWith("/receipts")) {
-      query += ` AND ($${
-        values.length + 1
-      }::text[] IS NULL OR LOWER(r.status) = ANY($${
-        values.length + 1
-      }) OR  (r.status IS NULL AND '' = ANY($${values.length + 1})))`;
+      conditions.push(`
+        (
+          $${values.length + 1}::text[] IS NULL
+          OR LOWER(r.status) = ANY($${values.length + 1})
+          OR (
+            r.status IS NULL
+            AND '' = ANY($${values.length + 1})
+          )
+        )
+      `);
+
       values.push(Statuses);
 
-      query += ` ORDER BY r.id Desc  LIMIT 30`;
+      if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(" AND ")}`;
+      }
+
+      query += `
+        ORDER BY r.id DESC
+        LIMIT 30
+      `;
     } else {
-      query += " GROUP BY r.id ORDER BY r.id Desc";
+      conditions.push(`
+          (
+            $${values.length + 1}::text[] IS NULL
+            OR LOWER(r.status) = ANY($${values.length + 1})
+            OR (
+              r.status IS NULL
+              AND '' = ANY($${values.length + 1})
+            )
+          )`);
+      values.push(Statuses);
+      if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(" AND ")}`;
+      }
+      query += `
+        GROUP BY r.id
+        ORDER BY r.id DESC
+      `;
     }
 
     const { rows } = await pool.query(query, values);
@@ -162,46 +240,62 @@ export const totalReceipts = async (
   Statuses,
   statusfilter,
   multiStatusfilter,
-  searchcs,
+  searchcsno,
+  searchcsname,
+  showInactive,
   emailcron = false,
 ) => {
   try {
-    let query = `Select count(*) from receipts  where deleted=0  `;
+    let query = `SELECT count(*) FROM receipts`;
+
     let values = [];
+    let conditions = [];
 
     if (type) {
-      query += ` AND ($${values.length + 1}::text IS NULL OR type = $${
-        values.length + 1
-      })`;
+      conditions.push(`type = $${values.length + 1}`);
       values.push(type);
     }
 
     if (multiStatusfilter.length > 0) {
-      query += ` AND LOWER(status) = ANY($${values.length + 1})`;
+      conditions.push(`LOWER(status) = ANY($${values.length + 1})`);
       values.push(multiStatusfilter);
     } else {
       let updatedStatus = Statuses?.map((s) => s.trim());
-      query += ` AND ($${
-        values.length + 1
-      }::text[] IS NULL OR COALESCE(LOWER(status), '') = ANY($${
-        values.length + 1
-      }))`;
+
+      conditions.push(
+        `COALESCE(LOWER(status), '') = ANY($${values.length + 1})`,
+      );
+
       values.push(updatedStatus);
     }
 
-    if (searchcs) {
-      query += ` AND id::text ILIKE $${values.length + 1} `;
-      values.push(`%${searchcs}%`);
+    if (searchcsno) {
+      conditions.push(`id::text ILIKE $${values.length + 1}`);
+      values.push(`%${searchcsno}%`);
+    }
+
+    if (searchcsname) {
+      conditions.push(`hiringname::text ILIKE $${values.length + 1}`);
+      values.push(`%${searchcsname}%`);
     }
 
     if (statusfilter) {
-      query += ` AND status = ($${values.length + 1})`;
+      conditions.push(`status = $${values.length + 1}`);
       values.push(statusfilter);
     }
+    if (!showInactive) {
+      conditions.push(`deleted = $${values.length + 1}`);
+      values.push(0);
+    }
     if (emailcron) {
-      query += `
-        AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
-        AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'`;
+      conditions.push(`
+        created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
+        AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
+      `);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
     }
 
     const { rows } = await pool.query(query, values);

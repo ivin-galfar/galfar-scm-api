@@ -1,4 +1,4 @@
-import { addUser, existing } from "../Models/userModel.js";
+import { addUser, existing, updateDocRead } from "../Models/userModel.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../Utils/generateToken.js";
 export const createUser = async (req, res) => {
@@ -18,7 +18,7 @@ export const createUser = async (req, res) => {
       role,
       deptcode,
       pr_code,
-      createdAt
+      createdAt,
     );
     res.json(user);
   } catch (er) {
@@ -46,6 +46,17 @@ export const authUser = async (req, res) => {
       token,
     });
   } catch (er) {
+    res.status(500).json({ error: er.message });
+  }
+};
+export const updateisDocRead = async (req, res) => {
+  const { email, click } = req.body;
+
+  try {
+    const updated = await updateDocRead(click, email);
+
+    return res.status(200).json(updated[0].isdoc_read);
+  } catch (error) {
     res.status(500).json({ error: er.message });
   }
 };

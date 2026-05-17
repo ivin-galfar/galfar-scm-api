@@ -172,7 +172,17 @@ export const AddBuyRentStatements = async (req, res) => {
 };
 
 export const fetchBuyRentStatements = async (req, res) => {
-  const { module, role, statusfilter, page, limit, searchcs } = req.query;
+  const {
+    module,
+    role,
+    statusfilter,
+    page,
+    limit,
+    searchcsno,
+    searchcsname,
+    showinactive,
+  } = req.query;
+  const showInactive = showinactive === "true";
 
   try {
     const Brstatements = await fetchBrStatements(
@@ -181,7 +191,9 @@ export const fetchBuyRentStatements = async (req, res) => {
       statusfilter,
       page,
       limit,
-      searchcs,
+      searchcsno,
+      searchcsname,
+      showInactive,
     );
 
     return res.status(200).json(Brstatements);
@@ -191,13 +203,18 @@ export const fetchBuyRentStatements = async (req, res) => {
 };
 
 export const fetchBuyRentTotalStatements = async (req, res) => {
-  const { module, role, statusfilter, searchcs } = req.query;
+  const { module, role, statusfilter, searchcsno, searchcsname, showinactive } =
+    req.query;
+  const showInactive = showinactive === "true";
+
   try {
     const count = await fetchtotalBrStatements(
       module,
       role,
       statusfilter,
-      searchcs,
+      searchcsno,
+      searchcsname,
+      showInactive,
     );
     return res.status(200).json(count);
   } catch (error) {

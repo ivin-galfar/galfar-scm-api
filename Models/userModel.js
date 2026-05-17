@@ -71,11 +71,14 @@ export const getEmailsByRole = async (
       role == "pm" ||
       role == "pd" ||
       role == "initpr" ||
-      role == "initdc"
+      role == "initdc" ||
+      role == "view"
     ) {
-      query += ` AND $${index} = ANY(pr_code)`;
-      values.push(project_code);
-      index++;
+      if (project_code) {
+        query += ` AND $${index} = ANY(pr_code)`;
+        values.push(project_code);
+        index++;
+      }
     }
 
     const result = await pool.query(query, values);
@@ -161,6 +164,23 @@ export const getEmailsByProject = async (project, isPdProject = false) => {
     const result = await pool.query(query, params);
 
     return result.rows.map((r) => r.email);
+  } catch (error) {
+    throw error;
+  }
+};
+export const updateDocRead = async (click, email) => {
+  try {
+    const query = `
+      UPDATE users 
+      SET isdoc_read = COALESCE(isdoc_read, 0) + 1
+      WHERE email = $1
+      RETURNING isdoc_read
+    `;
+    const values = [email];
+
+    const updated = await pool.query(query, values);
+
+    return updated.rows;
   } catch (error) {
     throw error;
   }

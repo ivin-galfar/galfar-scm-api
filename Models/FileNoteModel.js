@@ -46,11 +46,15 @@ export const filenote = async (
   statusfilter,
   page,
   limit,
-  searchcs,
+  searchcsno,
+  searchcsname,
   count,
   categoryFilter,
   typeFilter,
+  showinactive,
 ) => {
+  const showInactive = showinactive === "true";
+
   try {
     // Map role to pending condition
     const ROLE_PENDING_CONDITIONS = {
@@ -60,6 +64,9 @@ export const filenote = async (
       fm: "status = 'pending for sfm'",
       cm: "status = 'pending for cm'",
       initfn: "status LIKE 'pending%'",
+      inith: "status LIKE 'pending%'",
+      inita: "status LIKE 'pending%'",
+      incharge: "status LIKE 'pending for incharge'",
       view: "status LIKE 'pending%'",
       initpr: "status LIKE 'pending%'",
       initdc: "status LIKE 'pending%'",
@@ -69,7 +76,7 @@ export const filenote = async (
 
     const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
     const offset = page * limit;
-    const whereConditions = [];
+    let whereConditions = [];
     const dashValues = [];
     let values = [];
 
@@ -100,7 +107,9 @@ export const filenote = async (
         );
         dashValues.push(filteredDepts);
       }
-      last7DaysConditions.push("deleted = 0");
+      if (!showInactive) {
+        last7DaysConditions.push("deleted = 0");
+      }
 
       if (["initpr"].some((r) => role.includes(r))) {
         last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
@@ -129,7 +138,12 @@ export const filenote = async (
         last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
         dashValues.push("Demob");
       } else {
-        if (!role.includes("gm")) {
+        if (role.includes("hod")) {
+          last7DaysConditions.push(
+            `category NOT IN ($${dashValues.length + 1})`,
+          );
+          dashValues.push("FWA");
+        } else if (!role.includes("gm")) {
           last7DaysConditions.push(
             `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
           );
@@ -142,13 +156,12 @@ export const filenote = async (
       if (last7DaysConditions.length > 0) {
         last7DaysQuery += " WHERE " + last7DaysConditions.join(" AND ");
       }
-
       const result = await pool.query(last7DaysQuery, dashValues);
       last7DaysResult = result.rows;
     } else {
       query = count
         ? "SELECT COUNT(*) FROM file_note"
-        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name FROM file_note";
+        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name,deleted,demob_intimated FROM file_note";
     }
 
     // Add access control filter
@@ -177,7 +190,9 @@ export const filenote = async (
       values.push(typeFilter);
     }
     // Always include non-deleted records
-    whereConditions.push("deleted = 0");
+    if (!showInactive) {
+      whereConditions.push("deleted = 0");
+    }
 
     // Add category and project filter based on role
     if (["initpr"].some((r) => role.includes(r))) {
@@ -185,13 +200,17 @@ export const filenote = async (
       values.push("Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
-    } else if (["cm", "pm", "pd"].some((r) => role.includes(r))) {
-      whereConditions.push(
-        `category IN ($${values.length + 1}, $${values.length + 2})`,
-      );
-      values.push("FWA", "Demob");
-      whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push(project_code);
+    } else if (["cm", "pm", "pd", "gm"].some((r) => role.includes(r))) {
+      if (role != "gm") {
+        whereConditions.push(
+          `category IN ($${values.length + 1}, $${values.length + 2})`,
+        );
+        values.push("FWA", "Demob");
+      }
+      if (project_code.length > 0) {
+        whereConditions.push(`project_code = ANY($${values.length + 1})`);
+        values.push(project_code);
+      }
     } else if (["initdc"].some((r) => role.includes(r))) {
       whereConditions.push(`category = $${values.length + 1}`);
       values.push("FWA");
@@ -200,32 +219,50 @@ export const filenote = async (
     } else if (role.includes("view")) {
       whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
+      whereConditions.push(`project_code = ANY($${values.length + 1})`);
+      values.push(project_code);
     } else {
-      if (!role.includes("gm") && !role.includes("initfn")) {
+      if (role.includes("hod")) {
+        whereConditions.push(`category NOT IN ($${values.length + 1})`);
+        values.push("FWA");
+      } else if (role.includes("inith")) {
+        whereConditions.push(`category NOT IN ($${values.length + 1})`);
+        values.push("FWA");
+        if (categoryFilter == "Demob") {
+          whereConditions.push(`project_code = ANY($${values.length + 1})`);
+          values.push(project_code);
+        }
+      } else if (!role.includes("gm") && !role.includes("initfn")) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
         );
         values.push("FWA", "Demob");
       }
     }
-
     // Hide created and review status for non-admins
     if (!isadmin) {
-      whereConditions.push("status != 'created' AND status !='edit'");
+      whereConditions.push(
+        "status != 'created' AND status !='edit' AND status IS NOT NULL",
+      );
     }
 
     // Add search filter
-    if (searchcs) {
-      whereConditions.push(`doc_no::text LIKE $${values.length + 1}`);
-      values.push(`%${searchcs}%`);
+    if (searchcsname) {
+      whereConditions.push(`name::text ILIKE $${values.length + 1}`);
+      values.push(`%${searchcsname}%`);
+    }
+    if (searchcsno) {
+      whereConditions.push(`doc_no::text ILIKE $${values.length + 1}`);
+      values.push(`%${searchcsno}%`);
     }
 
     // Add status filter for dashboard
     if (module === "/dashboardfn" && statusfilter !== "All") {
       if (statusfilter === "Pending") {
-        const pendingPattern = isadmin
-          ? "%pending%"
-          : `%${role[0].toLowerCase()}`;
+        const pendingPattern =
+          isadmin || role.includes("view")
+            ? "%pending%"
+            : `%${role[0].toLowerCase()}`;
         whereConditions.push(`status LIKE $${values.length + 1}`);
         values.push(pendingPattern);
       } else {
@@ -431,6 +468,18 @@ export const fetchCategories = async (dept_id) => {
     let values = [dept_id];
     const { rows } = await pool.query(query, values);
     return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateiocintimation = async (flag, id) => {
+  try {
+    let query =
+      "UPDATE file_note set demob_intimated = $1 WHERE id=$2 RETURNING *";
+    let values = [flag, id];
+    const { rows } = await pool.query(query, values);
+    return rows[0].demob_intimated;
   } catch (error) {
     throw error;
   }
