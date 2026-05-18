@@ -319,10 +319,9 @@ export const allTableData = async () => {
 
 export const fetchoneReceiptFormData = async (cs_id) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM receipts where id = $1 and deleted=0",
-      [cs_id],
-    );
+    const { rows } = await pool.query("SELECT * FROM receipts where id = $1", [
+      cs_id,
+    ]);
     return { formData: rows[0] };
   } catch (error) {
     throw error;
@@ -332,7 +331,7 @@ export const fetchoneReceiptFormData = async (cs_id) => {
 export const fetchoneReceiptTableData = async (cs_id) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM tabledata where receipt_id = $1 and  deleted=0 ORDER BY id ASC",
+      "SELECT * FROM tabledata where receipt_id = $1 ORDER BY id ASC",
       [cs_id],
     );
     return { tableData: rows };

@@ -179,7 +179,7 @@ export const fetchTableData = async (cs_id) => {
 export const fetchAllCsid = async (module, role, project, showInactive) => {
   try {
     let query =
-      "SELECT id, status, project, created_at, cargo_details, createdby FROM log_statements";
+      "SELECT id, status, project, created_at, cargo_details, createdby, deleted FROM log_statements";
 
     let values = [];
     let conditions = [];

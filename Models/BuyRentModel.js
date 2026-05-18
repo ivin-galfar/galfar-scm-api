@@ -151,15 +151,15 @@ export const fetchBrStatements = async (
       query = `
           SELECT
             COUNT(*) AS total_count,
-            SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved_count,
+            SUM(CASE WHEN status = 'approved' AND deleted=0 THEN 1 ELSE 0 END) AS approved_count,
             SUM(
               CASE 
-                WHEN ${pendingCondition}
+                WHEN ${pendingCondition} AND deleted=0
                 THEN 1 ELSE 0
               END
             ) AS pending_count,
-            SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count,
-            SUM(CASE WHEN status = 'review' THEN 1 ELSE 0 END) AS review_count
+            SUM(CASE WHEN status = 'rejected' AND deleted=0 THEN 1 ELSE 0 END) AS rejected_count,
+            SUM(CASE WHEN status = 'review' AND deleted=0 THEN 1 ELSE 0 END) AS review_count
           FROM buy_rent_statements`;
 
       let last7DaysQuery = `
