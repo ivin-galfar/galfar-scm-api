@@ -225,6 +225,14 @@ export const filenote = async (
       if (role.includes("hod")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
+        if (
+          categoryFilter == "Demob" &&
+          project_code != "" &&
+          project_code != 1
+        ) {
+          whereConditions.push(`project_code = ANY($${values.length + 1})`);
+          values.push(project_code);
+        }
       } else if (role.includes("inith")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
@@ -232,6 +240,9 @@ export const filenote = async (
           whereConditions.push(`project_code = ANY($${values.length + 1})`);
           values.push(project_code);
         }
+      } else if (role.includes("initfn")) {
+        whereConditions.push(`category NOT IN ($${values.length + 1})`);
+        values.push("FWA");
       } else if (!role.includes("gm") && !role.includes("initfn")) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
