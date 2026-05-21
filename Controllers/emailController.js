@@ -74,9 +74,7 @@ export const EmailNotify = async (req, res) => {
       recipients = await getEmailsByRole(nextRole);
     } else {
       try {
-        recipients = project
-          ? await getEmailsByProject(project, isPdProject)
-          : [];
+        recipients = project ? await getEmailsByProject(project, nextRole) : [];
       } catch (error) {
         throw error;
       }

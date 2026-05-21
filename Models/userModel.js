@@ -147,7 +147,7 @@ export const getMultipleEmailsByRole = async (
   }
 };
 
-export const getEmailsByProject = async (project, isPdProject = false) => {
+export const getEmailsByProject = async (project, nextRole) => {
   if (!project) {
     throw new Error("Invalid project provided");
   }
@@ -160,7 +160,7 @@ export const getEmailsByProject = async (project, isPdProject = false) => {
       AND is_valid = true
   `;
 
-    const params = [project, isPdProject ? "pd" : "pm"];
+    const params = [project, nextRole];
     const result = await pool.query(query, params);
 
     return result.rows.map((r) => r.email);
