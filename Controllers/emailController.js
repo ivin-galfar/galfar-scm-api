@@ -855,7 +855,7 @@ export const EmailNotify = async (req, res) => {
                   style="padding:12px 24px; font-weight:bold; font-size:16px;">
                 <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
                   style="color:#ffffff; text-decoration:none; display:inline-block;">
-                  View Document
+                View Document in App
                 </a>
               </td>
 
@@ -871,7 +871,7 @@ export const EmailNotify = async (req, res) => {
             <div style="text-align: center; margin: 30px 0;">
                 <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}"
                  style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-                View Document
+                View Document in App
               </a>
               </div>
              ${
