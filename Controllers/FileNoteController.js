@@ -133,8 +133,8 @@ export const updatefnvalue = async (req, res) => {
     attachments,
     name,
     project_code,
+    exportedstatement,
   } = req.body;
-
   try {
     const fnidvalue = await updatefilenote(
       fnid,
@@ -149,6 +149,7 @@ export const updatefnvalue = async (req, res) => {
       attachments,
       name,
       project_code,
+      exportedstatement,
     );
 
     return res.status(200).json(fnidvalue);
@@ -206,9 +207,10 @@ export const fetchAllCategories = async (req, res) => {
 export const updateIoc = async (req, res) => {
   const { fnid } = req.params;
   const { flag } = req.body;
+  const { email } = req.body;
 
   try {
-    const updateioc = await updateiocintimation(flag, fnid);
+    const updateioc = await updateiocintimation(flag, fnid, email);
     return res.status(200).json(updateioc);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -20,6 +20,7 @@ export const EmailNotify = async (req, res) => {
       userInfo,
       shipment_no,
       rejectedby,
+      comments,
     } = req.body;
 
     const { role } = userInfo;
@@ -64,7 +65,7 @@ export const EmailNotify = async (req, res) => {
     };
 
     let nextRole = "";
-    if (["approved", "rejected"].includes(status)) {
+    if (["approved", "rejected", "review"].includes(status)) {
       nextRole = "initlg";
     } else {
       nextRole = nextRoleMap[role];
@@ -152,10 +153,12 @@ export const EmailNotify = async (req, res) => {
         <p style="margin: 0 0 16px;">The comparative statement  - <strong>${shipment_no}/${
           project ? project + "/" : ""
         }${cargo_details}</strong> is <strong>${
-          ["approved", "rejected"].includes(status)
+          ["approved", "rejected", "review"].includes(status)
             ? status === "rejected"
               ? `Rejected by ${rejectedby.toUpperCase()}`
-              : status
+              : status === "review"
+                ? "Under Review"
+                : status
             : "awaiting your approval"
         }</strong>.</p>
 
@@ -206,6 +209,7 @@ export const EmailNotify = async (req, res) => {
         datetime: new Date(),
         ...(role === "pm" && { pm }),
         ...(role === "pd" && { pd }),
+        comments: comments,
       };
       const [emailInfo] = await Promise.all([
         transporter.sendMail(mailOptions),
@@ -582,7 +586,11 @@ export const EmailNotify = async (req, res) => {
       status,
       created_at,
       project_code,
+      exportedstatement,
+      file,
+      file_name,
     } = req.body;
+
     const filenotesubrole =
       type === "file_note" && ["TFW", "General"].includes(category)
         ? "gm"
@@ -594,7 +602,7 @@ export const EmailNotify = async (req, res) => {
     const PD_PROJECTS = [7102, 7104, 7106];
     const pmpdrole =
       type === "ioc" &&
-      category == "FWA" &&
+      (category == "FWA" || category == "Demob") &&
       project_code !== 1501 &&
       PD_PROJECTS.includes(project_code)
         ? "pd"
@@ -626,6 +634,27 @@ export const EmailNotify = async (req, res) => {
         : nextRoleMap[role] || null;
 
     let recipients = [];
+
+    const exportedStatementFilename = exportedstatement
+      ? exportedstatement.split("/").pop().split("?")[0] ||
+        "Exported Statement.pdf"
+      : null;
+
+    const exportedStatementAttachment = exportedstatement
+      ? [
+          {
+            filename: exportedStatementFilename,
+            path: exportedstatement,
+          },
+        ]
+      : [];
+
+    const supportingDocs = (file || []).map((url, index) => ({
+      filename: file_name[index] || "",
+      path: url,
+    }));
+
+    const mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
     try {
       if (nextRole == "initfn") {
         if (type == "file_note") {
@@ -637,9 +666,9 @@ export const EmailNotify = async (req, res) => {
             ccemail.push(
               ...(await getMultipleEmailsByRole(["initfn"], dept_id)),
             );
-
             if (status !== "rejected" && status !== "review") {
-              recipients = await getMultipleEmailsByRole(["fm"], dept_id);
+              ccemail.push(...(await getMultipleEmailsByRole(["fm"], dept_id)));
+              recipients = await getMultipleEmailsByRole(["axp_adts"]);
             } else {
               recipients = await getMultipleEmailsByRole(["initfn"], dept_id);
             }
@@ -649,7 +678,16 @@ export const EmailNotify = async (req, res) => {
           }
         } else if (type == "ioc") {
           if (status !== "rejected" && status !== "review") {
-            recipients = await getMultipleEmailsByRole(["fm"], dept_id);
+            if (category == "Insurance") {
+              recipients = await getMultipleEmailsByRole(["axp_in"]);
+            } else if (category == "FC") {
+              recipients = await getMultipleEmailsByRole(["axp_fc"]);
+            } else if (category == "PR") {
+              recipients = await getMultipleEmailsByRole(["axp_pr"]);
+            } else if (category == "DPR") {
+              recipients = await getMultipleEmailsByRole(["axp_dpr"]);
+            }
+            ccemail.push(...(await getMultipleEmailsByRole(["fm"], dept_id)));
           }
 
           if (status == "rejected" || status == "review") {
@@ -688,14 +726,6 @@ export const EmailNotify = async (req, res) => {
             )),
           );
           ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
-          ccemail.push(
-            ...(await getMultipleEmailsByRole(
-              ["view"],
-              dept_id,
-              false,
-              project_code,
-            )),
-          );
           ccemail.push(...(await getMultipleEmailsByRole(["gm"], dept_id)));
         } else {
           ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
@@ -732,8 +762,9 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
         to: recipients,
+        attachments: status == "approved" ? mailAttachments : [],
         cc: ccemail,
-        subject: `${type == "file_note" ? "File Note" : "IOC"}/${name}/${category}/${project_code}/${doc_no} - ${
+        subject: `${type == "file_note" ? "File Note" : "IOC"} - ${name} : ${category}/${project_code ? project_code + "/" : ""}${doc_no} - ${
           nextRole === "initfn" ||
           nextRole === "initpr" ||
           nextRole === "initdc"
@@ -787,11 +818,7 @@ export const EmailNotify = async (req, res) => {
           <!-- Body -->
           <div style="padding: 24px; color: #333;">
             <p style="margin: 0 0 16px;">Dear User,</p>
-            <p style="margin: 0 0 16px;">The FN/IOC  - <strong>${doc_no}/${name}/${type}/${project_code}/${new Date(
-              created_at,
-            ).toLocaleDateString("en-AE", {
-              timeZone: "Asia/Dubai",
-            })}</strong> is <strong>${
+            <p style="margin: 0 0 16px;">The ${type == "file_note" ? "File Note" : "IOC"}  - <strong>${project_code ? project_code + "/" : ""}${doc_no} : ${name} </strong> is <strong>${
               ["approved", "rejected", "review"].includes(status)
                 ? status === "rejected"
                   ? `Rejected by ${role}`
@@ -800,6 +827,24 @@ export const EmailNotify = async (req, res) => {
                     : status
                 : "awaiting your approval"
             }</strong>.</p>
+
+            ${
+              status === "approved" && exportedstatement
+                ? `
+            <div style="margin: 20px 0; padding: 18px; background-color: #eef2ff; border-left: 4px solid #4338ca; border-radius: 8px;">
+              <p style="margin: 0 0 8px; font-size: 15px; font-weight: 600; color: #1e293b;">Approved Statement</p>
+              <p style="margin: 0 0 12px; font-size: 14px; color: #334155; line-height: 1.6;">
+                The approved statement has been generated and is now available for reference. Click the button below to download the PDF copy.
+              </p>
+              <p style="margin: 0;">
+                <a href="${exportedstatement}" style="display: inline-block; background-color: #1d4ed8; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-size: 14px;">
+                  Download approved statement
+                </a>
+              </p>
+            </div>
+            `
+                : ""
+            }
 
             <!-- Button -->
              <!--[if mso]>
@@ -816,7 +861,11 @@ export const EmailNotify = async (req, res) => {
 
             </tr>
           </table>
-          <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
+            ${
+              status == "approved"
+                ? `<p style="margin-top: 30px;">Also, find the approved document and the supporting documents in attachments.</p>`
+                : `<p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>`
+            }
           <![endif]-->
            <!--[if !mso]><!-- -->
             <div style="text-align: center; margin: 30px 0;">
@@ -825,7 +874,11 @@ export const EmailNotify = async (req, res) => {
                 View Document
               </a>
               </div>
-              <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
+             ${
+               status == "approved"
+                 ? `<p style="margin-top: 30px;">Also, find the approved document and the supporting documents in attachments.</p>`
+                 : `<p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>`
+             }
           <!--<![endif]-->
 
             <!-- Signature -->

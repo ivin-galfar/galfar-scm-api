@@ -369,6 +369,7 @@ export const updateCSStatus = async (
   comments_ceo,
   rejectedby,
   recalled_times,
+  comments_init,
 ) => {
   try {
     let query = "UPDATE log_statements SET status = $1";
@@ -423,6 +424,11 @@ export const updateCSStatus = async (
     if (comments_fm !== undefined && comments_fm !== null) {
       query += `, comment_fm = $${paramIndex}`;
       params.push(comments_fm);
+      paramIndex++;
+    }
+    if (comments_init !== undefined && comments_fm !== null) {
+      query += `, comment_init = $${paramIndex}`;
+      params.push(comments_init);
       paramIndex++;
     }
     if (comments_ceo !== undefined && comments_ceo !== null) {

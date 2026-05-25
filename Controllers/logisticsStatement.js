@@ -179,6 +179,7 @@ export const updateCS = async (req, res) => {
     comments_gm,
     comments_fm,
     comments_ceo,
+    comments_init,
     rejectedby,
     recalled_times,
   } = req.body;
@@ -200,6 +201,7 @@ export const updateCS = async (req, res) => {
       comments_ceo,
       rejectedby,
       recalled_times,
+      comments_init,
     );
 
     return res.status(200).json({ message: "Successfully Updated" });

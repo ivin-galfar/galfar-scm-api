@@ -161,7 +161,7 @@ export const filenote = async (
     } else {
       query = count
         ? "SELECT COUNT(*) FROM file_note"
-        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name,deleted,demob_intimated FROM file_note";
+        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name,deleted,demob_intimated,intimated_by FROM file_note";
     }
 
     // Add access control filter
@@ -316,7 +316,7 @@ export const filenote = async (
 
 export const onefilenote = async (id) => {
   try {
-    let query = "SELECT * FROM file_note WHERE id =$1 AND deleted = 0";
+    let query = "SELECT * FROM file_note WHERE id =$1";
     let values = [id];
 
     const { rows } = await pool.query(query, values);
@@ -339,6 +339,7 @@ export const updatefilenote = async (
   attachments,
   name,
   project_code,
+  exportedstatement,
 ) => {
   const file = attachments?.map((a) => a.url);
   const file_name = attachments?.map((a) => a.name);
@@ -417,6 +418,12 @@ export const updatefilenote = async (
       values.push(file_name);
       paramIndex++;
     }
+
+    if (exportedstatement !== undefined) {
+      query += `, exported_statement = $${paramIndex}`;
+      values.push(exportedstatement);
+      paramIndex++;
+    }
     query += ` WHERE id = $${paramIndex} RETURNING *`;
     values.push(fnid);
 
@@ -484,11 +491,11 @@ export const fetchCategories = async (dept_id) => {
   }
 };
 
-export const updateiocintimation = async (flag, id) => {
+export const updateiocintimation = async (flag, id, email) => {
   try {
     let query =
-      "UPDATE file_note set demob_intimated = $1 WHERE id=$2 RETURNING *";
-    let values = [flag, id];
+      "UPDATE file_note set demob_intimated = $1,intimated_by=$2 WHERE id=$3 RETURNING *";
+    let values = [flag, email, id];
     const { rows } = await pool.query(query, values);
     return rows[0].demob_intimated;
   } catch (error) {
