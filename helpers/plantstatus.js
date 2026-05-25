@@ -29,6 +29,7 @@ export const statusExpected = (
     !roles.includes("pm") &&
     !roles.includes("initpr") &&
     !roles.includes("initdc") &&
+    !roles.includes("pd") &&
     category !== "FWA"
   ) {
     if (roles.includes("initfn") && action == "save") {
@@ -68,11 +69,7 @@ export const statusExpected = (
     (category == "Demob" || category == "FWA")
   ) {
     statustext = "pending for cm";
-  } else if (
-    roles.includes("cm") &&
-    category == "FWA" &&
-    project_code !== 1501
-  ) {
+  } else if (roles.includes("cm") && project_code != 1501) {
     statustext = "pending for pm";
   } else if (
     roles.includes("cm") &&
@@ -80,7 +77,7 @@ export const statusExpected = (
     project_code == 1501
   ) {
     statustext = "pending for gm";
-  } else if (roles.includes("pm") && category == "FWA" && SpecialProjects) {
+  } else if (roles.includes("pm") && SpecialProjects) {
     statustext = "pending for pd";
   } else if (
     category === "FWA" &&
@@ -88,7 +85,11 @@ export const statusExpected = (
       (roles.includes("pd") && SpecialProjects))
   ) {
     statustext = "pending for gm";
-  } else if (roles.includes("gm") && category == "FWA") {
+  } else if (
+    (category == "Demob" && roles.includes("pd")) ||
+    (roles.includes("pm") && !SpecialProjects) ||
+    (roles.includes("gm") && category == "FWA")
+  ) {
     statustext = "approved";
   } else if (roles.includes("cm") && category == "Demob") {
     statustext = "approved";
