@@ -796,7 +796,9 @@ export const EmailNotify = async (req, res) => {
                             font-family:Arial, sans-serif;">
                     ${type == "file_note" ? "File Note" : "IOC Document"} -
                     ${
-                      nextRole === "initfn" || nextRole == "initfn"
+                      nextRole === "initfn" ||
+                      nextRole == "initpr" ||
+                      nextRole == "initdc"
                         ? status.charAt(0).toUpperCase() +
                           status.slice(1).toLowerCase()
                         : "Approval Required"
@@ -810,7 +812,9 @@ export const EmailNotify = async (req, res) => {
           <!--[if !mso]><!-- -->
           <div style="background-color: #004080; padding: 16px 24px;">
             <h2 style="margin: 0; color: #ffffff; font-size: 20px;">${type == "file_note" ? "File Note" : "IOC Document"} - ${
-              nextRole === "initfn"
+              nextRole === "initfn" ||
+              nextRole == "initpr" ||
+              nextRole == "initdc"
                 ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
                 : "Approval Required"
             }</h2>
