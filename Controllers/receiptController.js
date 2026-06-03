@@ -218,11 +218,8 @@ export const updateApprovalstatus = async (req, res) => {
       rejectedby || null,
       approverstatus || null,
     );
-    console.log(updatestatus);
     return res.json(updatestatus);
   } catch (error) {
-    console.log(error);
-
     res.status(500).json({ error: "Internal server error" });
   }
 };
