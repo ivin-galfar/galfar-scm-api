@@ -88,7 +88,7 @@ export const allReceipts = async (
 
   try {
     let query = `
-      SELECT DISTINCT ON (r.id)
+      SELECT DISTINCT ON (r.doc_no)
         r.id,
         r.type,
         r.hiringname,
@@ -97,7 +97,9 @@ export const allReceipts = async (
         r.sentforapproval,
         r.created_at,
         r.comments_count,
-        r.deleted
+        r.deleted,
+        r.projectvalue,
+        r.doc_no
     `;
 
     if (module?.startsWith("/dashboard")) {
@@ -175,7 +177,7 @@ export const allReceipts = async (
 
       query += `
         GROUP BY r.id
-        ORDER BY r.id DESC
+        ORDER BY r.doc_no DESC
       `;
 
       query += `
@@ -203,7 +205,7 @@ export const allReceipts = async (
       }
 
       query += `
-        ORDER BY r.id DESC
+        ORDER BY r.doc_no DESC
         LIMIT 30
       `;
     } else {
@@ -222,7 +224,7 @@ export const allReceipts = async (
       }
       query += `
         GROUP BY r.id
-        ORDER BY r.id DESC
+        ORDER BY r.doc_no DESC
       `;
     }
 
