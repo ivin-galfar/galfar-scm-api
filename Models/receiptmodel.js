@@ -161,8 +161,10 @@ export const allReceipts = async (
       }
 
       if (searchcsno) {
-        conditions.push(`r.id::text ILIKE $${values.length + 1}`);
-        values.push(`%${searchcsno}%`);
+        conditions.push(
+          `CAST(substring(r.doc_no from '[^/]*$') AS INTEGER) = CAST($${values.length + 1} AS INTEGER)`,
+        );
+        values.push(`${searchcsno}`);
       }
 
       if (searchcsname) {
@@ -273,8 +275,10 @@ export const totalReceipts = async (
     }
 
     if (searchcsno) {
-      conditions.push(`id::text ILIKE $${values.length + 1}`);
-      values.push(`%${searchcsno}%`);
+      conditions.push(
+        `CAST(substring(doc_no from '[^/]*$') AS INTEGER) = CAST($${values.length + 1} AS INTEGER)`,
+      );
+      values.push(`${searchcsno}`);
     }
 
     if (searchcsname) {
