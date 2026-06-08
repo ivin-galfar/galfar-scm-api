@@ -625,7 +625,12 @@ export const EmailNotify = async (req, res) => {
           };
     let nextRole = "";
     let ccemail = [];
-
+    let submitted_by = "";
+    if (role == "initpr" || role == "initfn" || role == "initdc") {
+      submitted_by = "Initiator";
+    } else {
+      submitted_by = role;
+    }
     nextRole =
       status === "approved" || status === "rejected" || status === "review"
         ? category != "Demob" && category != "FWA"
@@ -785,10 +790,11 @@ export const EmailNotify = async (req, res) => {
             <div style="margin: 16px 0; padding: 18px; background-color: #f7f9fc; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.6;">
               <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
               <ul style="margin: 0; padding-left: 18px; list-style: disc;">
+                <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${doc_no}</li>
                 <li style="margin-bottom: 8px;"><strong>Type :</strong> ${type == "file_note" ? "File Note" : "IOC"}</li>
                 <li style="margin-bottom: 8px;"><strong>Category :</strong> ${category != "fwa" ? category : "HWA"}</li>
                 <li style="margin-bottom: 8px;"><strong>Subject :</strong> ${name}</li>
-                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role.toUpperCase()}</li>
+                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${submitted_by.toUpperCase()}</li>
                 <li style="margin: 0;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
               </ul>
                ${
@@ -811,10 +817,10 @@ export const EmailNotify = async (req, res) => {
                 status == "approved"
                   ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
                   : status == "review"
-                    ? `. You can  check the under review document via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
+                    ? `. You can  check the under review document  directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
                     : status == "rejected"
                       ? `. You can  check the rejected document via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
-                      : `You can review and approve directly via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
+                      : `You can review and approve directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
               }
             </p>
 
