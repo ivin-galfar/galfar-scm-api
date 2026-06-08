@@ -28,6 +28,7 @@ export const EmailNotify = async (req, res) => {
     const { cs_id } = req.params;
     let definedprojects = [
       7092, 7112, 7099, 7110, 7111, 7114, 7108, 7105, 7097, 7102, 7104, 7106, 1,
+      7115,
     ];
     let project =
       typeof project_code === "string" ? Number(project_code) : project_code;
