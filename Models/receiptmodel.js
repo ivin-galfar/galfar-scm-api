@@ -88,7 +88,7 @@ export const allReceipts = async (
 
   try {
     let query = `
-      SELECT DISTINCT ON (r.doc_no)
+      SELECT DISTINCT ON (r.id)
         r.id,
         r.type,
         r.hiringname,
@@ -177,7 +177,7 @@ export const allReceipts = async (
 
       query += `
         GROUP BY r.id
-        ORDER BY r.doc_no DESC
+        ORDER BY r.id DESC
       `;
 
       query += `
