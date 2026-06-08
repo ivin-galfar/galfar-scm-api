@@ -205,7 +205,7 @@ export const allReceipts = async (
       }
 
       query += `
-        ORDER BY r.doc_no DESC
+        ORDER BY r.id DESC
         LIMIT 30
       `;
     } else {
@@ -224,7 +224,7 @@ export const allReceipts = async (
       }
       query += `
         GROUP BY r.id
-        ORDER BY r.doc_no DESC
+        ORDER BY r.id DESC
       `;
     }
 
