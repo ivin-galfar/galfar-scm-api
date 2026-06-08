@@ -205,8 +205,9 @@ export const allReceipts = async (
       }
 
       query += `
+        GROUP BY r.id
         ORDER BY r.id DESC
-        LIMIT 30
+        LIMIT 50
       `;
     } else {
       conditions.push(`
