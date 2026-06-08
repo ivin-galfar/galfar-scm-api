@@ -88,7 +88,7 @@ export const allReceipts = async (
 
   try {
     let query = `
-      SELECT DISTINCT ON (r.id)
+      SELECT 
         r.id,
         r.type,
         r.hiringname,
