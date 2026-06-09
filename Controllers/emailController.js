@@ -772,7 +772,7 @@ export const EmailNotify = async (req, res) => {
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         cc: ccemail,
-        subject: `${type == "file_note" ? "File Note" : "IOC"} - ${name} : ${category == "fwa" ? "HWA" : category}/${project_code ? project_code + "/" : ""}${doc_no} - ${
+        subject: `${type == "file_note" ? "File Note" : "IOC"} - ${name} : ${category == "FWA" ? "HWA" : category}/${project_code ? project_code + "/" : ""}${doc_no} - ${
           nextRole === "initfn" ||
           nextRole === "initpr" ||
           nextRole === "initdc"
