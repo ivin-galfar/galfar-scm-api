@@ -626,11 +626,17 @@ export const EmailNotify = async (req, res) => {
           };
     let nextRole = "";
     let ccemail = [];
+    const isTerminalStatus = ["approved", "rejected", "review"].includes(
+      status?.toLowerCase(),
+    );
     let submitted_by = "";
-    if (role == "initpr" || role == "initfn" || role == "initdc") {
-      submitted_by = "Initiator";
+
+    if (isTerminalStatus) {
+      submitted_by = role ? role.toUpperCase() : "";
+    } else if (category == "FWA" || category == "Demob") {
+      submitted_by = project_code + "  Project";
     } else {
-      submitted_by = role;
+      submitted_by = dept_id == 1 ? "P & E Dept." : dept_id;
     }
     nextRole =
       status === "approved" || status === "rejected" || status === "review"
@@ -782,13 +788,13 @@ export const EmailNotify = async (req, res) => {
               : "Approval Required"
         }`,
         html: `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; padding: 10px 0;">
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0;">
         <div style=" color: #333;">
           <p style="margin: 0 0 16px;">Dear User,</p>
           <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
            ${status == "approved" ? "This is to inform you that the following document(s) have been Approved." : status == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
           </p>
-            <div style="margin: 16px 0; padding: 18px; background-color: #f7f9fc; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.6;">
+            <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
               <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
               <ul style="margin: 0; padding-left: 18px; list-style: disc;">
                 <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${doc_no}</li>
@@ -796,7 +802,7 @@ export const EmailNotify = async (req, res) => {
                 <li style="margin-bottom: 8px;"><strong>Category :</strong> ${category != "fwa" ? category : "HWA"}</li>
                 ${project_code ? `<li style="margin-bottom: 8px;"><strong>Project Code :</strong> ${project_code}</li>` : ""}
                 <li style="margin-bottom: 8px;"><strong>Subject :</strong> ${name}</li>
-                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${submitted_by.toUpperCase()}</li>
+                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${submitted_by}</li>
                 <li style="margin: 0;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
               </ul>
                ${
@@ -824,6 +830,7 @@ export const EmailNotify = async (req, res) => {
                       ? `. You can  check the rejected document via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
                       : `You can review and approve directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
               }
+              <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
             </p>
 
             <p style="margin: 24px 0 4px;">Thank you,</p>
@@ -831,8 +838,8 @@ export const EmailNotify = async (req, res) => {
             <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
           </div>
 
-          <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center; margin-top: 15px;">
-           Need further clarifications?, please contact the concerned project/department.
+          <div style="background-color: transparent; padding: 2px 6px; font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+           ***This is a system-generated email. Please do not reply to this message.***
           </div>
       </div>
     `,
