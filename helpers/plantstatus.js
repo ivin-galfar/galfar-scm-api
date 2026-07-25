@@ -42,7 +42,7 @@ export const statusExpected = (
       //save after review
       statustext = "sent for approval";
     } else if (roles.includes("hod")) {
-      statustext = `pending for ${type == "ioc" || (type == "file_note" && category == "TFW") || (type == "file_note" && category == "General") ? "gm" : "sfm"}`;
+      statustext = `pending for ${(type == "ioc" && category != "Insurance") || (type == "file_note" && category == "TFW") || (type == "file_note" && category == "General") ? "gm" : "sfm"}`;
     } else if (roles.includes("fm")) {
       statustext = "pending for gm";
     } else if (roles.includes("gm")) {

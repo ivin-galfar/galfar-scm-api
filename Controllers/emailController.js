@@ -610,6 +610,7 @@ export const EmailNotify = async (req, res) => {
       PD_PROJECTS.includes(project_code)
         ? "pd"
         : "gm";
+    const isInsurance = category === "Insurance" ? "fm" : "gm";
 
     const nextRoleMap =
       type === "file_note"
@@ -621,7 +622,7 @@ export const EmailNotify = async (req, res) => {
             cm: iocsubrole,
             pm: pmpdrole,
             pd: "gm",
-            hod: "gm",
+            hod: isInsurance,
             gm: "ceo",
           };
     let nextRole = "";
