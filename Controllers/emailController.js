@@ -392,7 +392,7 @@ export const EmailNotify = async (req, res) => {
   } else if (dept == "plant" && !type && !category) {
     const { projectvalue, hiringname, type } = req.body.formData;
     const role = req.body.userInfo.role[0];
-    const { status } = req.body;
+    const { status, doc_no } = req.body;
     const { cs_id } = req.params;
 
     try {
@@ -508,7 +508,7 @@ export const EmailNotify = async (req, res) => {
        <!--[if !mso]><!-- -->
         <p style="margin: 0 0 16px;">Dear User,</p>
          <!--<![endif]-->
-        <p style="margin: 0 0 16px;">The comparative statement (${type}) - <strong>${cs_id}/${
+        <p style="margin: 0 0 16px;">The comparative statement (${type}) - <strong>${doc_no}:${
           projectvalue ? projectvalue + "/" : ""
         }${hiringname}</strong> is <strong>${
           ["Approved", "Rejected"].includes(status)
