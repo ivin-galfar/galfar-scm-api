@@ -67,16 +67,16 @@ export const fetchfnids = async (req, res) => {
   let updatedRoles = [];
 
   if (isadmin) {
-    if (roles.includes("initpr")) {
-      updatedRoles = ["initpr"];
-    } else if (roles.includes("initdc")) {
-      updatedRoles = ["initdc"];
-    } else if (roles.includes("inith")) {
-      updatedRoles = ["inith"];
-    } else if (roles.includes("inita")) {
-      updatedRoles = ["inita"];
-    } else if (roles.includes("initfn")) {
-      updatedRoles = ["initfn"];
+    const matchedAdminRoles = roles.filter((role) =>
+      ["initpr", "initdc", "inith", "inita", "initfn"].includes(role),
+    );
+    if (
+      matchedAdminRoles.includes("initpr") &&
+      matchedAdminRoles.includes("initdc")
+    ) {
+      updatedRoles = ["initpr", "initdc"];
+    } else {
+      updatedRoles = matchedAdminRoles;
     }
   } else {
     updatedRoles = roles.filter((r) => r !== "initfn");

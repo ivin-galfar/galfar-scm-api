@@ -56,6 +56,11 @@ export const filenote = async (
   const showInactive = showinactive === "true";
 
   try {
+    const normalizedRoles = (Array.isArray(role) ? role : [role]).filter(
+      Boolean,
+    );
+    const firstRole = normalizedRoles[0] || "";
+
     // Map role to pending condition
     const ROLE_PENDING_CONDITIONS = {
       ceo: "status = 'pending for ceo'",
@@ -74,7 +79,13 @@ export const filenote = async (
       pd: "status LIKE 'pending for pd'",
     };
 
-    const pendingCondition = ROLE_PENDING_CONDITIONS[role[0]] || "";
+    const pendingConditions = normalizedRoles
+      .map((currentRole) => ROLE_PENDING_CONDITIONS[currentRole])
+      .filter(Boolean);
+    const pendingCondition =
+      pendingConditions.length > 0
+        ? pendingConditions.map((condition) => `(${condition})`).join(" OR ")
+        : "1 = 0";
     const offset = page * limit;
     let whereConditions = [];
     const dashValues = [];
@@ -99,7 +110,7 @@ export const filenote = async (
 
       const last7DaysConditions = [];
       if (department_id) {
-        const filteredDepts = role.includes("hod")
+        const filteredDepts = normalizedRoles.includes("hod")
           ? department_id.filter((d) => d !== 2)
           : department_id;
         last7DaysConditions.push(
@@ -111,14 +122,27 @@ export const filenote = async (
         last7DaysConditions.push("deleted = 0");
       }
 
-      if (["initpr"].some((r) => role.includes(r))) {
-        last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
-        dashValues.push("Demob");
-        last7DaysConditions.push(
-          `project_code = ANY($${dashValues.length + 1})`,
-        );
-        dashValues.push(project_code);
-      } else if (["cm", "pm", "pd"].some((r) => role.includes(r))) {
+      if (normalizedRoles.some((r) => ["initpr", "initdc"].includes(r))) {
+        const categoryValues = [];
+        if (normalizedRoles.includes("initpr")) {
+          categoryValues.push("Demob");
+        }
+        if (normalizedRoles.includes("initdc")) {
+          categoryValues.push("FWA");
+        }
+        if (categoryValues.length > 0) {
+          last7DaysConditions.push(
+            `category IN (${categoryValues
+              .map((_, index) => `$${dashValues.length + index + 1}`)
+              .join(", ")})`,
+          );
+          dashValues.push(...categoryValues);
+          last7DaysConditions.push(
+            `project_code = ANY($${dashValues.length + 1})`,
+          );
+          dashValues.push(project_code);
+        }
+      } else if (["cm", "pm", "pd"].some((r) => normalizedRoles.includes(r))) {
         last7DaysConditions.push(
           `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
         );
@@ -127,23 +151,16 @@ export const filenote = async (
           `project_code = ANY($${dashValues.length + 1})`,
         );
         dashValues.push(project_code);
-      } else if (["initdc"].some((r) => role.includes(r))) {
-        last7DaysConditions.push(`category = $${dashValues.length + 1}`);
-        dashValues.push("FWA");
-        last7DaysConditions.push(
-          `project_code = ANY($${dashValues.length + 1})`,
-        );
-        dashValues.push(project_code);
-      } else if (role.includes("view")) {
+      } else if (normalizedRoles.includes("view")) {
         last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
         dashValues.push("Demob");
       } else {
-        if (role.includes("hod")) {
+        if (normalizedRoles.includes("hod")) {
           last7DaysConditions.push(
             `category NOT IN ($${dashValues.length + 1})`,
           );
           dashValues.push("FWA");
-        } else if (!role.includes("gm")) {
+        } else if (!normalizedRoles.includes("gm")) {
           last7DaysConditions.push(
             `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
           );
@@ -169,12 +186,12 @@ export const filenote = async (
       whereConditions.push(
         `(status LIKE $${values.length + 1} OR status = $${values.length + 2} OR status = $${values.length + 3})`,
       );
-      values.push(`%${role[0].toLowerCase()}`, "approved", "rejected");
+      values.push(`%${firstRole.toLowerCase()}`, "approved", "rejected");
     }
 
     // Add department filter
     if (department_id) {
-      const filteredDepts = role.includes("hod")
+      const filteredDepts = normalizedRoles.includes("hod")
         ? department_id.filter((d) => d !== 2)
         : department_id;
       whereConditions.push(`department_id = ANY($${values.length + 1})`);
@@ -195,13 +212,30 @@ export const filenote = async (
     }
 
     // Add category and project filter based on role
-    if (["initpr"].some((r) => role.includes(r))) {
-      whereConditions.push(`category IN ($${values.length + 1})`);
-      values.push("Demob");
-      whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push(project_code);
-    } else if (["cm", "pm", "pd", "gm"].some((r) => role.includes(r))) {
-      if (role != "gm") {
+    if (normalizedRoles.some((r) => ["initpr", "initdc"].includes(r))) {
+      const categoryValues = [];
+      if (normalizedRoles.includes("initpr")) {
+        categoryValues.push("Demob");
+      }
+      if (normalizedRoles.includes("initdc")) {
+        categoryValues.push("FWA");
+      }
+      if (categoryValues.length > 0) {
+        whereConditions.push(
+          `category IN (${categoryValues
+            .map((_, index) => `$${values.length + index + 1}`)
+            .join(", ")})`,
+        );
+        values.push(...categoryValues);
+      }
+      if (project_code.length > 0) {
+        whereConditions.push(`project_code = ANY($${values.length + 1})`);
+        values.push(project_code);
+      }
+    } else if (
+      ["cm", "pm", "pd", "gm"].some((r) => normalizedRoles.includes(r))
+    ) {
+      if (!normalizedRoles.includes("gm")) {
         whereConditions.push(
           `category IN ($${values.length + 1}, $${values.length + 2})`,
         );
@@ -211,18 +245,13 @@ export const filenote = async (
         whereConditions.push(`project_code = ANY($${values.length + 1})`);
         values.push(project_code);
       }
-    } else if (["initdc"].some((r) => role.includes(r))) {
-      whereConditions.push(`category = $${values.length + 1}`);
-      values.push("FWA");
-      whereConditions.push(`project_code = ANY($${values.length + 1})`);
-      values.push(project_code);
-    } else if (role.includes("view")) {
+    } else if (normalizedRoles.includes("view")) {
       whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
     } else {
-      if (role.includes("hod")) {
+      if (normalizedRoles.includes("hod")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
         if (
@@ -233,17 +262,20 @@ export const filenote = async (
           whereConditions.push(`project_code = ANY($${values.length + 1})`);
           values.push(project_code);
         }
-      } else if (role.includes("inith")) {
+      } else if (normalizedRoles.includes("inith")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
         if (categoryFilter == "Demob") {
           whereConditions.push(`project_code = ANY($${values.length + 1})`);
           values.push(project_code);
         }
-      } else if (role.includes("initfn")) {
+      } else if (normalizedRoles.includes("initfn")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
-      } else if (!role.includes("gm") && !role.includes("initfn")) {
+      } else if (
+        !normalizedRoles.includes("gm") &&
+        !normalizedRoles.includes("initfn")
+      ) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
         );
@@ -271,9 +303,9 @@ export const filenote = async (
     if (module === "/dashboardfn" && statusfilter !== "All") {
       if (statusfilter === "Pending") {
         const pendingPattern =
-          isadmin || role.includes("view")
+          isadmin || normalizedRoles.includes("view")
             ? "%pending%"
-            : `%${role[0].toLowerCase()}`;
+            : `%${firstRole.toLowerCase()}`;
         whereConditions.push(`status LIKE $${values.length + 1}`);
         values.push(pendingPattern);
       } else {
