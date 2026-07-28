@@ -240,7 +240,7 @@ export const fetchtotalstatements = async (
         } else {
           if (role != "initlg") {
             conditions.push(` status LIKE ($${values.length + 1}::text)`);
-            values.push(`%${role.toLowerCase()}`);
+            values.push(`%${role?.toLowerCase()}`);
           } else {
             conditions.push(` status LIKE ($${values.length + 1}::text)`);
             values.push(`%pending%`);
@@ -248,7 +248,7 @@ export const fetchtotalstatements = async (
         }
       } else {
         conditions.push(` status = ($${values.length + 1})`);
-        values.push(statusfilter.toLowerCase());
+        values.push(statusfilter?.toLowerCase());
       }
     }
     if (searchcsno) {
@@ -271,7 +271,7 @@ export const fetchtotalstatements = async (
     if (emailcron) {
       conditions.push(`
      created_at >= date_trunc('month', CURRENT_DATE - interval '1 month')
-     created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
+     AND created_at < date_trunc('month', CURRENT_DATE - interval '1 month') + interval '1 month'
   `);
     }
 

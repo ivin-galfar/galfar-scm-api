@@ -29,11 +29,15 @@ export const cronemails = () => {
         null,
         null,
         null,
+        null,
+        null,
         true,
       );
       const rejectedreceipts = await fetchallreceiptslogic(
         null,
         rejectedStatuses,
+        null,
+        null,
         null,
         null,
         null,
@@ -45,11 +49,15 @@ export const cronemails = () => {
         null,
         null,
         null,
+        null,
+        null,
         true,
       );
       const pendingReceipts = await fetchallreceiptslogic(
         null,
         pendingStatuses,
+        null,
+        null,
         null,
         null,
         null,
@@ -61,10 +69,14 @@ export const cronemails = () => {
         null,
         null,
         null,
+        null,
+        null,
         true,
       );
       const rejectedlogstatements = await fetchtotalstatements(
         "rejected",
+        null,
+        null,
         null,
         null,
         null,
@@ -75,10 +87,14 @@ export const cronemails = () => {
         null,
         null,
         null,
+        null,
+        null,
         true,
       );
       const pendinglogstatements = await fetchtotalstatements(
         "Pending",
+        null,
+        null,
         null,
         null,
         null,
