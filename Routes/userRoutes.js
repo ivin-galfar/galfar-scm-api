@@ -12,5 +12,4 @@ router.post("/login", authUser);
 router.post("/register", createUser);
 router.put("/updatedocread", updateisDocRead);
 router.post("/validateemail", verifyUser);
-router.get("/data", verifyUser);
 export default router;
