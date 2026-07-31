@@ -40,6 +40,52 @@ export const existing = async (email) => {
 
   return existing.rows;
 };
+
+export const updatePasswordResetToken = async (
+  userId,
+  hashedToken,
+  expires,
+) => {
+  const { rows } = await pool.query(
+    `UPDATE users
+     SET reset_token = $1,
+         reset_token_expires = $2
+     WHERE id = $3
+     RETURNING *`,
+    [hashedToken, expires, userId],
+  );
+
+  return rows[0];
+};
+
+export const getUserByResetToken = async (hashedToken) => {
+  const { rows } = await pool.query(
+    `SELECT id, email, role, dept_code, pr_code, is_admin, is_valid, reset_token_expires, created_at
+     FROM users
+     WHERE reset_token = $1`,
+    [hashedToken],
+  );
+
+  return rows[0] || null;
+};
+
+export const updatePassword = async (userId, newPassword) => {
+  const hashedPassword = await Hashpassword(newPassword);
+
+  const { rows } = await pool.query(
+    `UPDATE users
+     SET password = $1,
+         reset_token = NULL,
+         reset_token_expires = NULL,
+         password_updated = TRUE
+     WHERE id = $2
+     RETURNING id, email`,
+    [hashedPassword, userId],
+  );
+
+  return rows[0] || null;
+};
+
 export const getEmailsByRole = async (
   role,
   dept_id,
