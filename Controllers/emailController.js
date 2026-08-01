@@ -104,7 +104,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
         to: recipients,
         subject: `Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
           project ? project + " : " : ""
@@ -262,7 +262,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
         to: recipients,
         subject: `Comparative Statement (BVR) - ${
           nextRole === "inita"
@@ -457,7 +457,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
         to: recipients,
         subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
@@ -778,7 +778,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         cc: ccemail,
@@ -911,7 +911,7 @@ export const PwdResetReq = async (req, res) => {
       : "soon";
 
     const mailOptions = {
-      from: `"Galfar Intranet" <no-reply@galfaremirates.com>`,
+      from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
       to: email,
       subject: "Password Reset Request",
       html: `
