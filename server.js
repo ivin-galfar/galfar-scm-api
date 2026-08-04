@@ -21,10 +21,7 @@ const app = express();
 
 app.use(express.json());
 
-const allowedOrigins = [
-  "https://intranet.galfaremirates.com",
-  "http://localhost:5173",
-];
+const allowedOrigins = [process.env.PROD_URL, process.env.DEV_URL];
 
 const corsOptions = {
   origin: (origin, callback) => {

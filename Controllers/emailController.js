@@ -24,6 +24,10 @@ export const EmailNotify = async (req, res) => {
       shipment_no,
       rejectedby,
       comments,
+      created_at,
+      approvedPdfUrl,
+      file,
+      filename,
     } = req.body;
 
     const { role } = userInfo;
@@ -103,9 +107,34 @@ export const EmailNotify = async (req, res) => {
         },
       });
 
+      const exportedStatementFilename = approvedPdfUrl
+        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+          "Exported Statement.pdf"
+        : null;
+
+      const exportedStatementAttachment = approvedPdfUrl
+        ? [
+            {
+              filename: exportedStatementFilename,
+              path: approvedPdfUrl,
+            },
+          ]
+        : [];
+
+      const supportingDocs = (file || []).map((url, index) => ({
+        filename: filename[index] || "",
+        path: url,
+      }));
+
+      const mailAttachments = [
+        ...exportedStatementAttachment,
+        ...supportingDocs,
+      ];
+
       const mailOptions = {
-        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
+        from: process.env.FROM,
         to: recipients,
+        attachments: status == "approved" ? mailAttachments : [],
         subject: `Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
           project ? project + " : " : ""
         } ${
@@ -114,99 +143,77 @@ export const EmailNotify = async (req, res) => {
             : "Approval Required"
         }`,
         html: `
-  <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
-    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
-      
-      <!-- Header -->
-      <!--[if mso]>
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-            <td bgcolor="#004080"
-                style="padding:16px 24px;">
-              <p style="margin:0;
-                        color:#ffffff;
-                        font-size:20px;
-                        font-weight:bold;
-                        font-family:Arial, sans-serif;">
-                Comparative Statement -
-                ${
-                  nextRole === "initlg"
-                    ? status.charAt(0).toUpperCase() +
-                      status.slice(1).toLowerCase()
-                    : "Approval Required"
-                }
-              </p>
-            </td>
-          </tr>
-        </table>
-      <![endif]-->
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0;">
+        <div style=" color: #333;">
+          <p style="margin: 0 0 16px;">Dear User,</p>
+          <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
+           ${status == "approved" ? "This is to inform you that the following document(s) have been Approved." : status == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+          </p>
+            <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
+              <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
+              <ul style="margin: 0; padding-left: 18px; list-style: disc;">
+              <li style="margin-bottom: 8px;"><strong>Dept. :</strong> ${"Logistics"}</li>
+              <li style="margin-bottom: 8px;"><strong>Shipment No. :</strong> ${shipment_no}</li>
+                <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${cs_id}</li>
+                ${project ? `<li style="margin-bottom: 8px;"><strong>Project Code :</strong> ${project}</li>` : ""}
+                <li style="margin-bottom: 8px;"><strong>Cargo :</strong> ${cargo_details}</li>
+                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role}</li>
+                <li style="margin: 0;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
+              </ul>
+               ${
+                 status === "approved" && approvedPdfUrl
+                   ? `<div">
+                    <p style="margin: 5px 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                      The approved statement has been generated and is available for download below,
+                    </p>
+                    <p style="margin: 0;">
+                      <a href="${approvedPdfUrl}" style="color: #0f4b91; text-decoration: underline; font-weight: 600; font-size: 14px;">
+                        Download approved statement
+                      </a>
+                    </p>
+                  </div>`
+                   : ""
+               }
+            </div>
+            <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;">
+              ${
+                status == "approved"
+                  ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${
+                      process.env.ENVIRONMENT === "production"
+                        ? `${process.env.PROD_URL}/lstatements/${cs_id}`
+                        : `${process.env.DEV_URL}/lstatements/${cs_id}`
+                    }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
+                  : status == "review"
+                    ? `. You can  check the under review document  directly in our app via this link: <a href="${
+                        process.env.ENVIRONMENT === "production"
+                          ? `${process.env.PROD_URL}/lstatements/${cs_id}`
+                          : `${process.env.DEV_URL}/lstatements/${cs_id}`
+                      }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
+                    : status == "rejected"
+                      ? `. You can  check the rejected document via this link: <a href=${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/lstatements/${cs_id}`
+                            : `${process.env.DEV_URL}/lstatements/${cs_id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
+                      : `You can review and approve directly in our app via this link: <a href="${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/lstatements/${cs_id}`
+                            : `${process.env.DEV_URL}/lstatements/${cs_id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
+              }
+              <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
+            </p>
 
-      <!--[if !mso]><!-- -->
-      <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
-          nextRole === "initlg"
-            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval Required"
-        }</h2>
-      </div>
-      <![endif]-->
-
-      <!-- Body -->
-      <div style="padding: 24px; color: #333;">
-        <p style="margin: 0 0 16px;">Dear User,</p>
-        <p style="margin: 0 0 16px;">The comparative statement  - <strong>${shipment_no}/${
-          project ? project + "/" : ""
-        }${cargo_details}</strong> is <strong>${
-          ["approved", "rejected", "review"].includes(status)
-            ? status === "rejected"
-              ? `Rejected by ${rejectedby.toUpperCase()}`
-              : status === "review"
-                ? "Under Review"
-                : status
-            : "awaiting your approval"
-        }</strong>.</p>
-
-        <!-- Button -->
-         <!--[if mso]>
-        <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
-        <tr>
-          <td align="center"
-              bgcolor="#004080"
-              style="padding:12px 24px; font-weight:bold; font-size:16px;">
-            <a href="https://intranet.galfaremirates.com/lstatements/${cs_id}"
-              style="color:#ffffff; text-decoration:none; display:inline-block;">
-              View Comparative Statement
-            </a>
-          </td>
-
-        </tr>
-      </table>
-      <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
-      <![endif]-->
-       <!--[if !mso]><!-- -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="https://intranet.galfaremirates.com/lstatements/${cs_id}"
-             style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-            View Comparative Statement
-          </a>
+            <p style="margin: 24px 0 4px;">Thank you,</p>
+            <p style="margin: 0; font-weight: 600;">Software Development Team</p>
+            <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
           </div>
-          <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
-      <!--<![endif]-->
-        
-        <!-- Signature -->
-        <p style="margin: 24px 0 4px;">Thank you,</p>
-        <p style="margin: 0; font-weight: 600;">Software Development Team,</p>
-        <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
 
+          <div style="background-color: transparent; padding: 2px 6px; font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+           ***This is a system-generated email. Please do not reply to this message.***
+          </div>
       </div>
-
-      <!-- Footer -->
-      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
-        This is an automated email. Please do not reply.
-      </div>
-    </div>
-  </div>
-`,
+    `,
       };
       const approverdetails = {
         role: role,
@@ -230,8 +237,16 @@ export const EmailNotify = async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   } else if (dept == "buyvsrent") {
-    const { id, item, type, status, date } = req.body;
-
+    const {
+      id,
+      item,
+      type,
+      status,
+      file,
+      filename,
+      created_at,
+      approvedPdfUrl,
+    } = req.body;
     const { role } = req.body.userInfo;
 
     const nextRoleMap = {
@@ -261,116 +276,118 @@ export const EmailNotify = async (req, res) => {
         },
       });
 
+      const exportedStatementFilename = approvedPdfUrl
+        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+          "Exported Statement.pdf"
+        : null;
+
+      const exportedStatementAttachment = approvedPdfUrl
+        ? [
+            {
+              filename: exportedStatementFilename,
+              path: approvedPdfUrl,
+            },
+          ]
+        : [];
+
+      const supportingDocs = (file || []).map((url, index) => ({
+        filename: filename[index] || "",
+        path: url,
+      }));
+
+      const mailAttachments = [
+        ...exportedStatementAttachment,
+        ...supportingDocs,
+      ];
+
       const mailOptions = {
-        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
+        from: process.env.FROM,
         to: recipients,
+        attachments: status == "approved" ? mailAttachments : [],
         subject: `Comparative Statement (BVR) - ${
           nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : status == "review"
               ? "Under Review"
               : "Approval Required"
-        }:${item} (${new Date(date)
+        }:${item} (${new Date(created_at)
           .toLocaleDateString("en-AE", {
             timeZone: "Asia/Dubai",
           })
           .replace(/\//g, "-")})`,
+
         html: `
-  <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
-    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
-      
-      <!-- Header -->
-      <!--[if mso]>
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-            <td bgcolor="#004080"
-                style="padding:16px 24px;">
-              <p style="margin:0;
-                        color:#ffffff;
-                        font-size:20px;
-                        font-weight:bold;
-                        font-family:Arial, sans-serif;">
-                Comparative Statement -
-                ${
-                  nextRole === "inita"
-                    ? status.charAt(0).toUpperCase() +
-                      status.slice(1).toLowerCase()
-                    : "Approval Required"
-                }
-              </p>
-            </td>
-          </tr>
-        </table>
-      <![endif]-->
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0;">
+        <div style=" color: #333;">
+          <p style="margin: 0 0 16px;">Dear User,</p>
+          <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
+           ${status == "approved" ? "This is to inform you that the following document(s) have been Approved." : status == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+          </p>
+            <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
+              <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
+              <ul style="margin: 0; padding-left: 18px; list-style: disc;">
+              <li style="margin-bottom: 8px;"><strong>Dept. :</strong> ${"Plant & Equipment"}</li>
+              <li style="margin-bottom: 8px;"><strong>Type of Doc.:</strong> ${"Buy vs Rent"}</li>
+              <li style="margin-bottom: 8px;"><strong>Item :</strong> ${item}</li>
+              <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${id}</li>
+              <li style="margin-bottom: 8px;"><strong>Preferred Type:</strong> ${type}</li>
+              <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role == "inita" ? "INITIATOR" : role.toUpperCase()}</li>
+              <li style="margin-bottom: 8px;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
+              </ul>
+               ${
+                 status === "approved" && approvedPdfUrl
+                   ? `<div">
+                    <p style="margin: 5px 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                      The approved statement has been generated and is available for download below,
+                    </p>
+                    <p style="margin: 0;">
+                      <a href="${approvedPdfUrl}" style="color: #0f4b91; text-decoration: underline; font-weight: 600; font-size: 14px;">
+                        Download approved statement
+                      </a>
+                    </p>
+                  </div>`
+                   : ""
+               }
+            </div>
+            <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;">
+              ${
+                status == "approved"
+                  ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${
+                      process.env.ENVIRONMENT === "production"
+                        ? `${process.env.PROD_URL}/brstatement/${id}`
+                        : `${process.env.DEV_URL}/brstatement/${id}`
+                    }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
+                  : status == "review"
+                    ? `. You can  check the under review document  directly in our app via this link: <a href="${
+                        process.env.ENVIRONMENT === "production"
+                          ? `${process.env.PROD_URL}/brstatement/${id}`
+                          : `${process.env.DEV_URL}/brstatement/${id}`
+                      }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
+                    : status == "rejected"
+                      ? `. You can  check the rejected document via this link: <a href=${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/brstatement/${id}`
+                            : `${process.env.DEV_URL}/brstatement/${id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
+                      : `You can review and approve directly in our app via this link: <a href="${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/brstatement/${id}`
+                            : `${process.env.DEV_URL}/brstatement/${id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
+              }
+              <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
+            </p>
 
-      <!--[if !mso]><!-- -->
-      <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
-          nextRole === "inita"
-            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval Required"
-        }</h2>
-      </div>
-      <![endif]-->
-
-      <!-- Body -->
-      <div style="padding: 24px; color: #333;">
-        <p style="margin: 0 0 16px;">Dear User,</p>
-        <p style="margin: 0 0 16px;">The comparative statement  - <strong>${item}/${id}/${type}/${new Date(
-          date,
-        ).toLocaleDateString("en-AE", {
-          timeZone: "Asia/Dubai",
-        })}</strong> is <strong>${
-          ["approved", "rejected", "review"].includes(status)
-            ? status === "rejected"
-              ? `Rejected by ${role}`
-              : status == "review"
-                ? "under Review"
-                : status
-            : "awaiting your approval"
-        }</strong>.</p>
-
-        <!-- Button -->
-         <!--[if mso]>
-        <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
-        <tr>
-          <td align="center"
-              bgcolor="#004080"
-              style="padding:12px 24px; font-weight:bold; font-size:16px;">
-            <a href="https://intranet.galfaremirates.com/brstatement/${id}"
-              style="color:#ffffff; text-decoration:none; display:inline-block;">
-              View Comparative Statement
-            </a>
-          </td>
-
-        </tr>
-      </table>
-      <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
-      <![endif]-->
-       <!--[if !mso]><!-- -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="https://intranet.galfaremirates.com/brstatement/${id}"
-             style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-            View Comparative Statement
-          </a>
+            <p style="margin: 24px 0 4px;">Thank you,</p>
+            <p style="margin: 0; font-weight: 600;">Software Development Team</p>
+            <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
           </div>
-          <p style="margin: 0;">Please review and update accordingly at your earliest convenience.</p>
-      <!--<![endif]-->
-        
-        <!-- Signature -->
-        <p style="margin: 24px 0 4px;">Thank you,</p>
-        <p style="margin: 0; font-weight: 600;">Software Development Team,</p>
-        <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
 
+          <div style="background-color: transparent; padding: 2px 6px; font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+           ***This is a system-generated email. Please do not reply to this message.***
+          </div>
       </div>
-
-      <!-- Footer -->
-      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
-        This is an automated email. Please do not reply.
-      </div>
-    </div>
-  </div>
-`,
+    `,
       };
       const approverdetails = {
         role: role,
@@ -457,7 +474,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
+        from: process.env.FROM,
         to: recipients,
         subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
@@ -528,7 +545,7 @@ export const EmailNotify = async (req, res) => {
           <td align="center"
               bgcolor="#004080"
               style="padding:12px 24px; font-weight:bold; font-size:16px;">
-            <a href="https://intranet.galfaremirates.com/receipts/${cs_id}"
+            <a href="${process.env.PROD_URL}/receipts/${cs_id}"
               style="color:#ffffff; text-decoration:none; display:inline-block;">
               View Comparative Statement
             </a>
@@ -542,7 +559,7 @@ export const EmailNotify = async (req, res) => {
 
       <!--[if !mso]><!-- -->
         <div style="text-align: center; margin: 30px 0;">
-          <a href="https://intranet.galfaremirates.com/receipts/${cs_id}"
+          <a href="${process.env.PROD_URL}/receipts/${cs_id}"
              style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
             View Comparative Statement
           </a>
@@ -778,7 +795,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
+        from: process.env.FROM,
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         cc: ccemail,
@@ -827,12 +844,12 @@ export const EmailNotify = async (req, res) => {
             <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;">
               ${
                 status == "approved"
-                  ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
+                  ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${process.env.ENVIRONMENT == "production" ? `${process.env.PROD_URL}/filenote/` : `${process.env.DEV_URL}/filenote/`}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
                   : status == "review"
-                    ? `. You can  check the under review document  directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
+                    ? `. You can  check the under review document  directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? `${process.env.PROD_URL}/filenote/` : `${process.env.DEV_URL}/filenote/`}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
                     : status == "rejected"
-                      ? `. You can  check the rejected document via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
-                      : `You can review and approve directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/filenote/" : "http://localhost:5173/filenote/"}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
+                      ? `. You can  check the rejected document via this link: <a href="${process.env.ENVIRONMENT == "production" ? `${process.env.PROD_URL}/filenote/` : `${process.env.DEV_URL}/filenote/`}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
+                      : `You can review and approve directly in our app via this link: <a href="${process.env.ENVIRONMENT == "production" ? `${process.env.PROD_URL}/filenote/` : `${process.env.DEV_URL}/filenote/`}${id}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
               }
               <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
             </p>
@@ -898,7 +915,7 @@ export const PwdResetReq = async (req, res) => {
       },
     });
 
-    const resetUrl = `${process.env.ENVIRONMENT == "production" ? "https://intranet.galfaremirates.com/" : "http://localhost:5173/"}resetpwd?token=${resetLinkToken}${expiry ? `&expiry=${encodeURIComponent(expiry)}` : ""}`;
+    const resetUrl = `${process.env.ENVIRONMENT == "production" ? process.env.PROD_URL : process.env.DEV_URL}resetpwd?token=${resetLinkToken}${expiry ? `&expiry=${encodeURIComponent(expiry)}` : ""}`;
     const expiryText = expiry
       ? new Date(expiry).toLocaleString("en-AE", {
           timeZone: "Asia/Dubai",
@@ -911,7 +928,7 @@ export const PwdResetReq = async (req, res) => {
       : "soon";
 
     const mailOptions = {
-      from: `"Galfar Webapp" <notifications@galfaremirates.com>`,
+      from: process.env.FROM,
       to: email,
       subject: "Password Reset Request",
       html: `
