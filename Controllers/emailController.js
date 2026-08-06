@@ -410,9 +410,10 @@ export const EmailNotify = async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   } else if (dept == "plant" && !type && !category) {
-    const { projectvalue, hiringname, type } = req.body.formData;
+    const { projectvalue, hiringname, type, created_at, file, filename } =
+      req.body.formData;
     const role = req.body.userInfo.role[0];
-    const { status, doc_no } = req.body;
+    const { status, doc_no, approvedPdfUrl } = req.body;
     const { cs_id } = req.params;
 
     try {
@@ -473,114 +474,117 @@ export const EmailNotify = async (req, res) => {
         },
       });
 
+      const exportedStatementFilename = approvedPdfUrl
+        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+          "Exported Statement.pdf"
+        : null;
+
+      const exportedStatementAttachment = approvedPdfUrl
+        ? [
+            {
+              filename: exportedStatementFilename,
+              path: approvedPdfUrl,
+            },
+          ]
+        : [];
+
+      const supportingDocs = (file || []).map((url, index) => ({
+        filename: filename[index] || "",
+        path: url,
+      }));
+
+      const mailAttachments = [
+        ...exportedStatementAttachment,
+        ...supportingDocs,
+      ];
+
       const mailOptions = {
         from: process.env.FROM,
         to: recipients,
+        attachments: status.toLowerCase() == "approved" ? mailAttachments : [],
         subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
         }`,
         html: `
-  <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; background-color: #f4f6f8; padding: 40px 0;">
-    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden;">
-      
-      <!-- Header -->
-       <!--[if mso]>
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
- <tr>
-    <td bgcolor="#004080"
-        style="padding:16px 24px;">
-      <p style="margin:0;
-                color:#ffffff;
-                font-size:20px;
-                font-weight:bold;
-                font-family:Arial, sans-serif;">
-        Comparative Statement -
-        ${
-          nextRole === "inith" || nextRole === "inita"
-            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval Required"
-        }
-      </p>
-    </td>
-  </tr>
-</table>
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0;">
+        <div style=" color: #333;">
+          <p style="margin: 0 0 16px;">Dear User,</p>
+          <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
+           ${status.toLowerCase() == "approved" ? "This is to inform you that the following document(s) have been Approved." : status.toLowerCase() == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status.toLowerCase() == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+          </p>
+            <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
+              <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
+              <ul style="margin: 0; padding-left: 18px; list-style: disc;">
+              <li style="margin-bottom: 8px;"><strong>Dept. :</strong> ${"Plant & Equipment"}</li>
+              <li style="margin-bottom: 8px;"><strong>Type of Doc.:</strong> ${type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}</li>
+              <li style="margin-bottom: 8px;"><strong>Subject :</strong> ${hiringname}</li>
+              <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${doc_no}</li>
+              ${
+                type == "hiring"
+                  ? `<li style="margin-bottom: 8px;">
+                <strong>Project :</strong> ${projectvalue}
+              </li>`
+                  : ""
+              }
+              <li style="margin-bottom: 8px;"><strong>${status.toLowerCase() == "approved" ? "Approved By :" : status.toLowerCase() == "rejected" ? "Rejected By :" : status.toLowerCase() == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role == "inita" || role == "inith" ? "INITIATOR" : role.toUpperCase()}</li>
+              <li style="margin-bottom: 8px;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
+              </ul>
+               ${
+                 status === "approved" && approvedPdfUrl
+                   ? `<div">
+                    <p style="margin: 5px 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                      The approved statement has been generated and is available for download below,
+                    </p>
+                    <p style="margin: 0;">
+                      <a href="${approvedPdfUrl}" style="color: #0f4b91; text-decoration: underline; font-weight: 600; font-size: 14px;">
+                        Download approved statement
+                      </a>
+                    </p>
+                  </div>`
+                   : ""
+               }
+            </div>
+            <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;">
+              ${
+                status == "approved"
+                  ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${
+                      process.env.ENVIRONMENT === "production"
+                        ? `${process.env.PROD_URL}/brstatement/${cs_id}`
+                        : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                    }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
+                  : status == "review"
+                    ? `. You can  check the under review document  directly in our app via this link: <a href="${
+                        process.env.ENVIRONMENT === "production"
+                          ? `${process.env.PROD_URL}/brstatement/${cs_id}`
+                          : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                      }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
+                    : status == "rejected"
+                      ? `. You can  check the rejected document via this link: <a href=${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/brstatement/${cs_id}`
+                            : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
+                      : `You can review and approve directly in our app via this link: <a href="${
+                          process.env.ENVIRONMENT === "production"
+                            ? `${process.env.PROD_URL}/brstatement/${cs_id}`
+                            : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                        }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
+              }
+              <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
+            </p>
 
-         <![endif]-->
-        
-      <!--[if !mso]><!-- -->
-      <div style="background-color: #004080; padding: 16px 24px;">
-        <h2 style="margin: 0; color: #ffffff; font-size: 20px;">Comparative Statement - ${
-          nextRole === "inith" || nextRole === "inita"
-            ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-            : "Approval Required"
-        }</h2>
-      </div>
-      <!--<![endif]-->
-
-      <!-- Body -->
-      <div style="padding: 24px; color: #333;">
-        <!--[if mso]>
-          <p style="margin-top: 30px">Dear User,</p>
-         <![endif]-->
-
-       <!--[if !mso]><!-- -->
-        <p style="margin: 0 0 16px;">Dear User,</p>
-         <!--<![endif]-->
-        <p style="margin: 0 0 16px;">The comparative statement (${type}) - <strong>${doc_no}:${
-          projectvalue ? projectvalue + "/" : ""
-        }${hiringname}</strong> is <strong>${
-          ["Approved", "Rejected"].includes(status)
-            ? status
-            : status === "review"
-              ? "Under Review"
-              : "awaiting your approval"
-        }</strong>.</p>
-
-        <!-- Button -->
-        <!--[if mso]>
-        <table align="center" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px auto;">
-        <tr>
-          <td align="center"
-              bgcolor="#004080"
-              style="padding:12px 24px; font-weight:bold; font-size:16px;">
-            <a href="${process.env.PROD_URL}/receipts/${cs_id}"
-              style="color:#ffffff; text-decoration:none; display:inline-block;">
-              View Comparative Statement
-            </a>
-          </td>
-
-        </tr>
-      </table>
-      <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
-      <![endif]-->
-
-
-      <!--[if !mso]><!-- -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.PROD_URL}/receipts/${cs_id}"
-             style="background-color: #004080; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-            View Comparative Statement
-          </a>
+            <p style="margin: 24px 0 4px;">Thank you,</p>
+            <p style="margin: 0; font-weight: 600;">Software Development Team</p>
+            <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
           </div>
-          <p style="margin-top: 30px;">Please review and update accordingly at your earliest convenience.</p>
-      <!--<![endif]-->
-        
-        <!-- Signature -->
-        <p style="margin: 24px 0 4px;">Thank you,</p>
-        <p style="margin: 0; font-weight: 600;">Software Development Team,</p>
-        <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
 
+          <div style="background-color: transparent; padding: 2px 6px; font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+           ***This is a system-generated email. Please do not reply to this message.***
+          </div>
       </div>
-  
-      <!-- Footer -->
-      <div style="background-color: #f4f6f8; padding: 12px 24px; font-size: 12px; color: #888; text-align: center;margin-top:15px">
-      This is an automated email. Please do not reply.
-      </div>
-    </div>
-  </div>
-`,
+    `,
       };
 
       const [emailInfo] = await Promise.all([
@@ -820,7 +824,7 @@ export const EmailNotify = async (req, res) => {
               <ul style="margin: 0; padding-left: 18px; list-style: disc;">
                 <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${doc_no}</li>
                 <li style="margin-bottom: 8px;"><strong>Type :</strong> ${type == "file_note" ? "File Note" : "IOC"}</li>
-                <li style="margin-bottom: 8px;"><strong>Category :</strong> ${category != "fwa" ? category : "HWA"}</li>
+                <li style="margin-bottom: 8px;"><strong>Category :</strong> ${category.toLowerCase() != "fwa" ? category : "HWA"}</li>
                 ${project_code ? `<li style="margin-bottom: 8px;"><strong>Project Code :</strong> ${project_code}</li>` : ""}
                 <li style="margin-bottom: 8px;"><strong>Subject :</strong> ${name}</li>
                 <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${submitted_by}</li>
