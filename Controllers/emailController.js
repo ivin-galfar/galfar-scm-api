@@ -157,7 +157,7 @@ export const EmailNotify = async (req, res) => {
                 <li style="margin-bottom: 8px;"><strong>Doc No. :</strong> ${cs_id}</li>
                 ${project ? `<li style="margin-bottom: 8px;"><strong>Project Code :</strong> ${project}</li>` : ""}
                 <li style="margin-bottom: 8px;"><strong>Cargo :</strong> ${cargo_details}</li>
-                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role}</li>
+                <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role == "initlg" ? "INITIATOR" : role.toUpperCase()}</li>
                 <li style="margin: 0;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
               </ul>
                ${
