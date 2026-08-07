@@ -213,7 +213,7 @@ export const fetchBrStatements = async (
       }`;
       values.push(limit, offset);
     } else if (module !== "/") {
-      conditions.push(` ORDER BY id Desc LIMIT 50`);
+      query += ` ORDER BY id Desc LIMIT 50`;
     }
 
     const { rows } = await pool.query(query, values);
