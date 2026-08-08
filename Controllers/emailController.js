@@ -529,7 +529,7 @@ export const EmailNotify = async (req, res) => {
       const mailOptions = {
         from: process.env.FROM,
         to: recipients,
-        attachments: emailAttachments,
+        attachments: status.toLowerCase() == "approved" ? emailAttachments : [],
         subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
