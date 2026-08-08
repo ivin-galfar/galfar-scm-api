@@ -579,25 +579,25 @@ export const EmailNotify = async (req, res) => {
                 status == "approved"
                   ? ` The approved document and supporting attachments are included with this email. You can also verify the approved document in our application via this link: <a href="${
                       process.env.ENVIRONMENT === "production"
-                        ? `${process.env.PROD_URL}/brstatement/${cs_id}`
-                        : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                        ? `${process.env.PROD_URL}/receipts/${cs_id}`
+                        : `${process.env.DEV_URL}/receipts/${cs_id}`
                     }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Verify and confirm.</a>`
                   : status == "review"
                     ? `. You can  check the under review document  directly in our app via this link: <a href="${
                         process.env.ENVIRONMENT === "production"
-                          ? `${process.env.PROD_URL}/brstatement/${cs_id}`
-                          : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                          ? `${process.env.PROD_URL}/receipts/${cs_id}`
+                          : `${process.env.DEV_URL}/receipts/${cs_id}`
                       }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">>Review and Update.</a>`
                     : status == "rejected"
                       ? `. You can  check the rejected document via this link: <a href=${
                           process.env.ENVIRONMENT === "production"
-                            ? `${process.env.PROD_URL}/brstatement/${cs_id}`
-                            : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                            ? `${process.env.PROD_URL}/receipts/${cs_id}`
+                            : `${process.env.DEV_URL}/receipts/${cs_id}`
                         }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and create new.</a>`
                       : `You can review and approve directly in our app via this link: <a href="${
                           process.env.ENVIRONMENT === "production"
-                            ? `${process.env.PROD_URL}/brstatement/${cs_id}`
-                            : `${process.env.DEV_URL}/brstatement/${cs_id}`
+                            ? `${process.env.PROD_URL}/receipts/${cs_id}`
+                            : `${process.env.DEV_URL}/receipts/${cs_id}`
                         }" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">Review and Approve.</a>`
               }
               <p style="margin: 0 0 16px; color: #555; font-size: 14px; line-height: 1.6;"> If you have any questions or require additional information, please contact the concerned department.</p>
