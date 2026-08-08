@@ -12,6 +12,8 @@ import { emaillogs, emaillogsfn } from "../Models/emailModel.js";
 import pmMap from "../Utils/pmmapping.js";
 import { sentemail } from "../Models/logisticsModel.js";
 import { PmCmNames } from "../Models/projectModel.js";
+import { PDFDocument } from "pdf-lib";
+import { mergedPdf } from "../helpers/helperfunctions.js";
 
 export const EmailNotify = async (req, res) => {
   const { dept = "", type = "", category = "" } = req.query || {};
@@ -497,11 +499,37 @@ export const EmailNotify = async (req, res) => {
         ...exportedStatementAttachment,
         ...supportingDocs,
       ];
+      let mergedDocs = [];
+      let allArePdf = true;
+      for (const attachment of mailAttachments) {
+        const azureResponse = await fetch(attachment.path);
+        const contentType = azureResponse.headers.get("content-type");
+        if (contentType !== "application/pdf") {
+          allArePdf = false;
+          break;
+        }
+      }
+
+      let emailAttachments;
+
+      if (allArePdf) {
+        const mergedDocs = await mergedPdf(mailAttachments);
+
+        emailAttachments = [
+          {
+            filename: exportedStatementFilename,
+            content: mergedDocs,
+            contentType: "application/pdf",
+          },
+        ];
+      } else {
+        emailAttachments = mailAttachments;
+      }
 
       const mailOptions = {
         from: process.env.FROM,
         to: recipients,
-        attachments: status.toLowerCase() == "approved" ? mailAttachments : [],
+        attachments: emailAttachments,
         subject: `Comparative Statement  (${type})- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
@@ -512,7 +540,7 @@ export const EmailNotify = async (req, res) => {
         <div style=" color: #333;">
           <p style="margin: 0 0 16px;">Dear User,</p>
           <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
-           ${status.toLowerCase() == "approved" ? "This is to inform you that the following document(s) have been Approved." : status.toLowerCase() == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status.toLowerCase() == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+           ${status.toLowerCase() == "approved" ? "This is to inform you that the following document(s) have been Approved. The supporting documents has been merged with the approved statement with this email." : status.toLowerCase() == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status.toLowerCase() == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
           </p>
             <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
               <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
