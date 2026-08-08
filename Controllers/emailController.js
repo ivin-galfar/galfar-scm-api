@@ -513,7 +513,7 @@ export const EmailNotify = async (req, res) => {
       let emailAttachments;
 
       if (allArePdf) {
-        const mergedDocs = await mergedPdf(mailAttachments);
+        mergedDocs = await mergedPdf(mailAttachments);
 
         emailAttachments = [
           {
