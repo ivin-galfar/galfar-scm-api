@@ -33,7 +33,15 @@ export const EmailNotify = async (req, res) => {
     } = req.body;
 
     const { role } = userInfo;
-
+    const [day, month, year] = created_at.split("/");
+    const formattedDate = new Date(
+      `${year}-${month}-${day}T00:00:00`,
+    ).toLocaleDateString("en-AE", {
+      timeZone: "Asia/Dubai",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
     const { cs_id } = req.params;
     let definedprojects = [
       7092, 7112, 7099, 7110, 7111, 7114, 7108, 7105, 7097, 7102, 7104, 7106, 1,
@@ -160,7 +168,7 @@ export const EmailNotify = async (req, res) => {
                 ${project ? `<li style="margin-bottom: 8px;"><strong>Project Code :</strong> ${project}</li>` : ""}
                 <li style="margin-bottom: 8px;"><strong>Cargo :</strong> ${cargo_details}</li>
                 <li style="margin-bottom: 8px;"><strong>${status == "approved" ? "Approved By :" : status == "rejected" ? "Rejected By :" : status == "review" ? "Sent for Reveiew By :" : "Submitted By :"}</strong> ${role == "initlg" ? "INITIATOR" : role.toUpperCase()}</li>
-                <li style="margin: 0;"><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
+                <li style="margin: 0;"><strong>Created Date:</strong> ${formattedDate}</li>
               </ul>
                ${
                  status === "approved" && approvedPdfUrl
@@ -250,6 +258,7 @@ export const EmailNotify = async (req, res) => {
       approvedPdfUrl,
     } = req.body;
     const { role } = req.body.userInfo;
+    console.log(created_at);
 
     const nextRoleMap = {
       inita: "hod",
