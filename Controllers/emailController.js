@@ -134,7 +134,7 @@ export const EmailNotify = async (req, res) => {
       ];
 
       const mailOptions = {
-        from: process.env.FROM,
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         subject: `Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
@@ -303,7 +303,7 @@ export const EmailNotify = async (req, res) => {
       ];
 
       const mailOptions = {
-        from: process.env.FROM,
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         subject: `Comparative Statement (BVR) - ${
@@ -527,7 +527,7 @@ export const EmailNotify = async (req, res) => {
       }
 
       const mailOptions = {
-        from: process.env.FROM,
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         to: recipients,
         attachments: status.toLowerCase() == "approved" ? emailAttachments : [],
         subject: `Comparative Statement  (${type})- ${
@@ -827,7 +827,7 @@ export const EmailNotify = async (req, res) => {
       });
 
       const mailOptions = {
-        from: process.env.FROM,
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         to: recipients,
         attachments: status == "approved" ? mailAttachments : [],
         cc: ccemail,
@@ -960,7 +960,7 @@ export const PwdResetReq = async (req, res) => {
       : "soon";
 
     const mailOptions = {
-      from: process.env.FROM,
+      from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
       to: email,
       subject: "Password Reset Request",
       html: `
