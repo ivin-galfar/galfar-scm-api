@@ -258,7 +258,6 @@ export const EmailNotify = async (req, res) => {
       approvedPdfUrl,
     } = req.body;
     const { role } = req.body.userInfo;
-    console.log(created_at);
 
     const nextRoleMap = {
       inita: "hod",
