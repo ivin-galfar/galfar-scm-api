@@ -425,6 +425,7 @@ export const EmailNotify = async (req, res) => {
     const role = req.body.userInfo.role[0];
     const { status, doc_no, approvedPdfUrl } = req.body;
     const { cs_id } = req.params;
+    const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
 
     try {
       const cs_exists = await fetchoneReceiptFormData(cs_id);
@@ -485,21 +486,21 @@ export const EmailNotify = async (req, res) => {
       });
 
       const exportedStatementFilename = approvedPdfUrl
-        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+        ? approvedPdfUrl.split("/").pop().split("?")[0].trim() ||
           "Exported Statement.pdf"
         : null;
 
       const exportedStatementAttachment = approvedPdfUrl
         ? [
             {
-              filename: exportedStatementFilename,
+              filename: "cs_" + formattedType + exportedStatementFilename,
               path: approvedPdfUrl,
             },
           ]
         : [];
 
       const supportingDocs = (file || []).map((url, index) => ({
-        filename: filename[index] || "",
+        filename: filename?.[index] || "",
         path: url,
       }));
 
@@ -538,7 +539,7 @@ export const EmailNotify = async (req, res) => {
         from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         to: recipients,
         attachments: status.toLowerCase() == "approved" ? emailAttachments : [],
-        subject: `Comparative Statement  (${type})- ${
+        subject: `Comparative Statement  (${formattedType})- ${
           nextRole === "inith" || nextRole === "inita"
             ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             : "Approval Required"
