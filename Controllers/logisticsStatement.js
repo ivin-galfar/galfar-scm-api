@@ -10,6 +10,7 @@ import {
   updateDeleteFlag,
   updatelogisticsStatement,
 } from "../Models/logisticsModel.js";
+import { PmCmNames } from "../Models/projectModel.js";
 
 export const AddlogisticsStatement = async (req, res) => {
   const { formData, tableData } = req.body;
@@ -49,25 +50,7 @@ export const UpdatelogisticsStatement = async (req, res) => {
   const { formData, tableData } = req.body;
 
   const { cs_id } = req.params;
-  // for (const [key, value] of Object.entries(formData)) {
-  //   if (
-  //     key === "file" ||
-  //     key === "filename" ||
-  //     key === "lastupdated" ||
-  //     key === "review"
-  //   )
-  //     continue;
-  //   if (
-  //     value === "" ||
-  //     value === null ||
-  //     value === undefined ||
-  //     (typeof value === "string" && value.trim() === "")
-  //   ) {
-  //     return res.status(400).json({
-  //       message: `Validation Error: "${key}" cannot be empty.`,
-  //     });
-  //   }
-  // }
+
   try {
     const feedstatement = await updatelogisticsStatement({
       formData,
@@ -182,9 +165,33 @@ export const updateCS = async (req, res) => {
     comments_init,
     rejectedby,
     recalled_times,
+    role,
+    project,
   } = req.body;
 
   const { cs_id } = req.params;
+  const project_code = typeof project === "string" ? Number(project) : project;
+
+  const pm = role === "pm" ? (await PmCmNames(role, project_code))?.[0] : "";
+  const pd = role === "pd" ? (await PmCmNames(role, project_code))?.[0] : "";
+
+  const commentsByRole = {
+    incharge: comments_incharge,
+    pm: comments_pm,
+    pd: comments_pd,
+    gm: comments_gm,
+    fm: comments_fm,
+    ceo: comments_ceo,
+    init: comments_init,
+  };
+
+  const approverdetails = {
+    role,
+    datetime: new Date(),
+    ...(role === "pm" && { pm }),
+    ...(role === "pd" && { pd }),
+    comment: commentsByRole[role] ?? "",
+  };
 
   try {
     await updateCSStatus(
@@ -202,6 +209,7 @@ export const updateCS = async (req, res) => {
       rejectedby,
       recalled_times,
       comments_init,
+      approverdetails,
     );
 
     return res.status(200).json({ message: "Successfully Updated" });
