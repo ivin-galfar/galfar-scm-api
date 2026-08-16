@@ -215,7 +215,7 @@ export const ProcessFnEmail = async ({
       cc: ccemail,
       subject: `${
         SLA
-          ? `SLA Reminder - Approval Required | ${type === "file_note" ? "File Note" : "IOC"} - ${name}`
+          ? `Approval Pending Reminder - Approval Required | ${type === "file_note" ? "File Note" : "IOC"} - ${name}`
           : `${type === "file_note" ? "File Note" : "IOC"} - ${
               nextRole === "initfn" ||
               nextRole === "initpr" ||

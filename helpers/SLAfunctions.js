@@ -113,7 +113,7 @@ export const Processslafunctions = async (statements = [], statementType) => {
         statement_id,
         statement_type,
         skipped: true,
-        reason: "Not eligible for SLA Reminder",
+        reason: "Not eligible for Approval Pending Reminder",
       });
       continue;
     }
