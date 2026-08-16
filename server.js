@@ -14,6 +14,7 @@ import FNRoutes from "./Routes/FileNoteRoutes.js";
 // import SharePointRoutes from "./Routes/sharepointRoutes.js";
 import verifyToken from "./Utils/jwtTokenValidation.js";
 import { cronemails } from "./cron/emailCron.js";
+import { pendingSLACron } from "./cron/pendingSLACron.js";
 dotenv.config();
 const port = process.env.PORT;
 
@@ -55,4 +56,5 @@ app.use(notFound, errorHandler);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
   cronemails();
+  pendingSLACron();
 });

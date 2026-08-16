@@ -282,8 +282,6 @@ export const fetchtotalstatements = async (
     const { rows } = await pool.query(query, values);
     return rows[0];
   } catch (error) {
-    console.log(error);
-
     throw error;
   }
 };
@@ -370,6 +368,7 @@ export const updateCSStatus = async (
   rejectedby,
   recalled_times,
   comments_init,
+  approverdetails,
 ) => {
   try {
     let query = "UPDATE log_statements SET status = $1";
@@ -439,6 +438,12 @@ export const updateCSStatus = async (
     if (status && status.toLowerCase() === "rejected" && rejectedby) {
       query += `, rejectedby = $${paramIndex}`;
       params.push(rejectedby);
+      paramIndex++;
+    }
+
+    if (approverdetails !== undefined && approverdetails !== null) {
+      query += `, approver_info = COALESCE(approver_info, '[]'::jsonb) || $${paramIndex}::jsonb`;
+      params.push(JSON.stringify([approverdetails]));
       paramIndex++;
     }
     // WHERE clause
