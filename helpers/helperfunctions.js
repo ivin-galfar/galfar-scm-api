@@ -31,3 +31,18 @@ export const mergedPdf = async (mailAttachments = []) => {
     console.log(error);
   }
 };
+
+export const formattedDate = (rawDate) => {
+  const formatted_date_flag = rawDate
+    ? new Date(rawDate).toLocaleString("en-GB", {
+        timeZone: "Asia/Dubai",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "";
+  return formatted_date_flag;
+};

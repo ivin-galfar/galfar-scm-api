@@ -21,6 +21,7 @@ export const ProcessBvrEmail = async ({
   approvedPdfUrl,
   role,
   SLA = false,
+  date_flag,
 }) => {
   const nextRoleMap = {
     inita: "hod",
@@ -92,7 +93,7 @@ export const ProcessBvrEmail = async ({
         <div style=" color: #333;">
           <p style="margin: 0 0 16px;">Dear User,</p>
           <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
-           ${status == "approved" ? "This is to inform you that the following document(s) have been Approved." : status == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+           ${status == "approved" ? "This is to inform you that the following document(s) have been Approved." : status == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status == "review" ? "This is to inform you that the following document(s) have been submitted for review." : `This is to inform you that the following document(s) have been submitted for approval${SLA ? ` on ${date_flag}` + "." : "."}`} 
           </p>
             <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
               <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>

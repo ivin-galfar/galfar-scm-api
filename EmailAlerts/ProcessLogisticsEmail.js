@@ -27,6 +27,7 @@ export const ProcessLogisticsEmail = async ({
   role,
   cs_id,
   SLA = false,
+  date_flag,
 }) => {
   const [day, month, year] = created_at.split("/");
   const formattedDate = new Date(
@@ -155,7 +156,7 @@ export const ProcessLogisticsEmail = async ({
                     ? "This is to inform you that the following document(s) have been Rejected."
                     : status == "review"
                       ? "This is to inform you that the following document(s) have been submitted for review."
-                      : "This is to inform you that the following document(s) have been submitted for approval."
+                      : `This is to inform you that the following document(s) have been submitted for approval${SLA ? ` on ${date_flag}` + "." : "."}`
               }
             </p>
             <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">

@@ -5,6 +5,7 @@ import {
   getStatementEmailTriggerSummary,
   insertStatementEmailTriggerLog,
 } from "../Models/SLAEmailTriggerLog.js";
+import { formattedDate } from "./helperfunctions.js";
 
 const normalizePendingRole = (status) => {
   if (!status || typeof status !== "string") return null;
@@ -28,7 +29,7 @@ const shouldSendSLAEmail = ({ triggered_count, triggered_at }) => {
   return hoursSinceLastTrigger;
 };
 
-const buildLogisticsArgs = (statement, slaRole) => ({
+const buildLogisticsArgs = (statement, slaRole, date_flag) => ({
   status: statement.status,
   project_code: statement.project ?? statement.project_code,
   cargo_details: statement.cargo_details,
@@ -51,9 +52,10 @@ const buildLogisticsArgs = (statement, slaRole) => ({
   role: statement.approver_info?.at(-1)?.role ?? "",
   cs_id: statement.id || statement.cs_id,
   SLA: true,
+  date_flag: date_flag,
 });
 
-const buildBvrArgs = (statement, slaRole) => ({
+const buildBvrArgs = (statement, slaRole, date_flag) => ({
   id: statement.id,
   item: statement.item,
   type: statement.chosentype,
@@ -64,9 +66,10 @@ const buildBvrArgs = (statement, slaRole) => ({
   approvedPdfUrl: statement.approved_pdf_url || statement.approvedPdfUrl,
   role: statement.approver_info?.at(-1)?.role ?? "",
   SLA: true,
+  date_flag: date_flag,
 });
 
-const buildFnArgs = (statement, slaRole) => ({
+const buildFnArgs = (statement, slaRole, date_flag) => ({
   id: statement.id,
   dept_id: statement.department_id ?? statement.dept_id,
   role: statement.approver_info?.at(-1)?.role ?? "",
@@ -83,6 +86,7 @@ const buildFnArgs = (statement, slaRole) => ({
   type: statement.type,
   category: statement.category,
   SLA: true,
+  date_flag: date_flag,
 });
 
 export const Processslafunctions = async (statements = [], statementType) => {
@@ -93,12 +97,16 @@ export const Processslafunctions = async (statements = [], statementType) => {
   for (const statement of statements) {
     const statement_id = statement.id || statement.cs_id;
     const statement_type = statementType;
+    const lastApprover = statement.approver_info?.at(-1);
     const triggerSummary = await getStatementEmailTriggerSummary({
       statement_id,
       statement_type,
     });
 
     const SLAhours = shouldSendSLAEmail(triggerSummary);
+    const last_approved_date =
+      lastApprover?.datetime ?? lastApprover?.date ?? "";
+    const date_flag = formattedDate(last_approved_date);
 
     if (SLAhours !== 0 && SLAhours <= 48) {
       results.push({
@@ -118,12 +126,16 @@ export const Processslafunctions = async (statements = [], statementType) => {
     try {
       if (statementType === "logistics") {
         emailResult = await ProcessLogisticsEmail(
-          buildLogisticsArgs(statement, slaRole),
+          buildLogisticsArgs(statement, slaRole, date_flag),
         );
       } else if (statementType === "buyvsrent") {
-        emailResult = await ProcessBvrEmail(buildBvrArgs(statement, slaRole));
+        emailResult = await ProcessBvrEmail(
+          buildBvrArgs(statement, slaRole, date_flag),
+        );
       } else if (statementType === "filenote") {
-        emailResult = await ProcessFnEmail(buildFnArgs(statement, slaRole));
+        emailResult = await ProcessFnEmail(
+          buildFnArgs(statement, slaRole, date_flag),
+        );
       } else {
         continue;
       }
@@ -135,8 +147,6 @@ export const Processslafunctions = async (statements = [], statementType) => {
         message: error.message || "SLA email send failed.",
       };
     }
-
-    const lastApprover = statement.approver_info?.at(-1);
 
     await insertStatementEmailTriggerLog({
       statement_id,
@@ -157,7 +167,7 @@ export const Processslafunctions = async (statements = [], statementType) => {
       document_category:
         statementType === "filenote" ? statement.category : "N/A",
       log_info: emailResult,
-      last_approved: lastApprover?.datetime ?? lastApprover?.date ?? "",
+      last_approved: last_approved_date,
       dept:
         statementType !== "filenote" && statementType !== "buyvsrent"
           ? "Logistics"
