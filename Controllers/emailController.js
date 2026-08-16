@@ -101,7 +101,6 @@ export const EmailNotify = async (req, res) => {
     const role = req.body.userInfo.role[0];
     const { status, doc_no, approvedPdfUrl } = req.body;
     const { cs_id } = req.params;
-    const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
 
     try {
       const result = await ProcessHireEmail({

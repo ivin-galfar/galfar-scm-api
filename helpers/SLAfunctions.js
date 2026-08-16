@@ -85,19 +85,6 @@ const buildFnArgs = (statement, slaRole) => ({
   SLA: true,
 });
 
-const buildDocumentMeta = (statement, statementType) => ({
-  document_id: statement.id || statement.cs_id,
-  document_type:
-    statementType === "filenote"
-      ? statement.type || statement.category || "filenote"
-      : statementType === "buyvsrent"
-        ? statement.type || "buyvsrent"
-        : statementType === "logistics"
-          ? "logistics"
-          : statementType,
-  document_category: statement.category || statement.type || null,
-});
-
 export const Processslafunctions = async (statements = [], statementType) => {
   if (!Array.isArray(statements)) return [];
 

@@ -17,6 +17,8 @@ export const ProcessHireEmail = async ({
   approvedPdfUrl,
   cs_id,
 }) => {
+  const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
+
   try {
     const cs_exists = await fetchoneReceiptFormData(cs_id);
     if (!cs_exists.formData || Object.keys(cs_exists.formData).length === 0) {
@@ -126,7 +128,7 @@ export const ProcessHireEmail = async ({
       from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
       to: recipients,
       attachments: status.toLowerCase() == "approved" ? emailAttachments : [],
-      subject: `Comparative Statement  (${type})- ${
+      subject: `Comparative Statement  (${formattedType})- ${
         nextRole === "inith" || nextRole === "inita"
           ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
           : "Approval Required"
