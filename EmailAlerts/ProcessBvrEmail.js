@@ -79,7 +79,7 @@ export const ProcessBvrEmail = async ({
       to: recipients,
       attachments: status == "approved" ? mailAttachments : [],
       subject: SLA
-        ? `Approval Pending Reminder - Approval Required | Comparative Statement (BVR) - ${item}`
+        ? `Reminder - Approval Required | Comparative Statement (BVR) - ${item}`
         : `${
             nextRole === "inita"
               ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()

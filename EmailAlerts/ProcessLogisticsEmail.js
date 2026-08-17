@@ -133,7 +133,7 @@ export const ProcessLogisticsEmail = async ({
       to: recipients,
       attachments: status == "approved" ? mailAttachments : [],
       subject: `${
-        SLA ? "Approval Pending Reminder - Approval Required - " : ""
+        SLA ? "Reminder - Approval Required - " : ""
       }Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
         project ? project + " : " : ""
       }${

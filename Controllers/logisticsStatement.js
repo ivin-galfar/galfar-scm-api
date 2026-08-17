@@ -190,7 +190,7 @@ export const updateCS = async (req, res) => {
     datetime: new Date(),
     ...(role === "pm" && { pm }),
     ...(role === "pd" && { pd }),
-    comment: commentsByRole[role] ?? "",
+    comments: commentsByRole[role] ?? "",
   };
 
   try {
