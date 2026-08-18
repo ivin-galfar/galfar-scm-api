@@ -1,21 +1,12 @@
 import { ProcessBvrEmail } from "../EmailAlerts/ProcessBvrEmail.js";
 import { ProcessFnEmail } from "../EmailAlerts/ProcessFnEmail.js";
+import { ProcessHireEmail } from "../EmailAlerts/ProcessHireEmail.js";
 import { ProcessLogisticsEmail } from "../EmailAlerts/ProcessLogisticsEmail.js";
 import {
   getStatementEmailTriggerSummary,
   insertStatementEmailTriggerLog,
 } from "../Models/SLAEmailTriggerLog.js";
 import { formattedDate } from "./helperfunctions.js";
-
-const normalizePendingRole = (status) => {
-  if (!status || typeof status !== "string") return null;
-  const match = status.match(/pending for\s+(.+)$/i);
-  if (!match) return null;
-
-  const pendingRole = match[1].trim().toLowerCase();
-  if (pendingRole === "sfm") return "fm";
-  return pendingRole;
-};
 
 const shouldSendSLAEmail = ({ triggered_count, triggered_at }) => {
   if (!triggered_count || triggered_count === 0) return 0;
@@ -29,11 +20,10 @@ const shouldSendSLAEmail = ({ triggered_count, triggered_at }) => {
   return hoursSinceLastTrigger;
 };
 
-const buildLogisticsArgs = (statement, slaRole, date_flag) => ({
+const buildLogisticsArgs = (statement, date_flag) => ({
   status: statement.status,
   project_code: statement.project ?? statement.project_code,
   cargo_details: statement.cargo_details,
-  userInfo: { role: slaRole || statement.role || "initlg" },
   shipment_no: statement.shipment_no,
   rejectedby: statement.rejectedby,
   comments:
@@ -55,7 +45,7 @@ const buildLogisticsArgs = (statement, slaRole, date_flag) => ({
   date_flag: date_flag,
 });
 
-const buildBvrArgs = (statement, slaRole, date_flag) => ({
+const buildBvrArgs = (statement, date_flag) => ({
   id: statement.id,
   item: statement.item,
   type: statement.chosentype,
@@ -69,7 +59,7 @@ const buildBvrArgs = (statement, slaRole, date_flag) => ({
   date_flag: date_flag,
 });
 
-const buildFnArgs = (statement, slaRole, date_flag) => ({
+const buildFnArgs = (statement, date_flag) => ({
   id: statement.id,
   dept_id: statement.department_id ?? statement.dept_id,
   role: statement.approver_info?.at(-1)?.role ?? "",
@@ -87,6 +77,26 @@ const buildFnArgs = (statement, slaRole, date_flag) => ({
   category: statement.category,
   SLA: true,
   date_flag: date_flag,
+});
+
+const buildHireAssetArgs = (statement, date_flag) => ({
+  cs_id: statement.id,
+  hiringname: statement.hiringname,
+  date: statement.dateValue,
+  role: statement.approver_info?.at(-1)?.role ?? "",
+  doc_no: statement.doc_no,
+  status: statement.status,
+  dept: "plant",
+  created_at: statement.created_at,
+  project_code: statement.projectvalue,
+  exportedstatement:
+    statement.exportedstatement || statement.exportedStatement || null,
+  file: statement.file,
+  file_name: statement.file_name,
+  type: statement.type,
+  SLA: true,
+  date_flag: date_flag,
+  role: statement.approver_info?.at(-1)?.role ?? "",
 });
 
 export const Processslafunctions = async (statements = [], statementType) => {
@@ -118,7 +128,6 @@ export const Processslafunctions = async (statements = [], statementType) => {
       continue;
     }
 
-    const slaRole = normalizePendingRole(statement.status);
     let emailResult = null;
     let triggerStatus = "failed";
     let triggerNumber = triggerSummary.triggered_count + 1;
@@ -126,15 +135,15 @@ export const Processslafunctions = async (statements = [], statementType) => {
     try {
       if (statementType === "logistics") {
         emailResult = await ProcessLogisticsEmail(
-          buildLogisticsArgs(statement, slaRole, date_flag),
+          buildLogisticsArgs(statement, date_flag),
         );
       } else if (statementType === "buyvsrent") {
-        emailResult = await ProcessBvrEmail(
-          buildBvrArgs(statement, slaRole, date_flag),
-        );
+        emailResult = await ProcessBvrEmail(buildBvrArgs(statement, date_flag));
       } else if (statementType === "filenote") {
-        emailResult = await ProcessFnEmail(
-          buildFnArgs(statement, slaRole, date_flag),
+        emailResult = await ProcessFnEmail(buildFnArgs(statement, date_flag));
+      } else if (statementType === "hiringasset") {
+        emailResult = await ProcessHireEmail(
+          buildHireAssetArgs(statement, date_flag),
         );
       } else {
         continue;
@@ -156,20 +165,15 @@ export const Processslafunctions = async (statements = [], statementType) => {
       status: triggerStatus,
       email_sent: triggerStatus === "sent",
       document_id: statement.id || statement.cs_id,
-      document_type:
-        statementType === "filenote"
-          ? statementType
-          : statementType === "buyvsrent"
-            ? "buyvsrent"
-            : statementType === "logistics"
-              ? "logistics"
-              : statementType,
+      document_type: statement.type || statementType || "N/A",
       document_category:
         statementType === "filenote" ? statement.category : "N/A",
       log_info: emailResult,
       last_approved: last_approved_date,
       dept:
-        statementType !== "filenote" && statementType !== "buyvsrent"
+        statementType !== "filenote" &&
+        statementType !== "buyvsrent" &&
+        statementType !== "hiringasset"
           ? "Logistics"
           : "Plant",
       SLAhours: SLAhours,

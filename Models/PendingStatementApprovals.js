@@ -75,19 +75,32 @@ export const fetchPendingApprovalsBySLA = async ({
   const now = new Date();
   const baseFilter = includeDeleted ? "" : " WHERE deleted = 0";
   const pendingFilter = `${baseFilter}${baseFilter ? " AND" : " WHERE"} status IS NOT NULL AND status LIKE 'pending%'`;
+  const pendingHireAssetFilter = `${baseFilter}${baseFilter ? " AND" : " WHERE"} r.status IS NOT NULL AND r.status LIKE 'Pending%'`;
 
   try {
-    const [logResult, buyRentResult, fileNoteResult] = await Promise.all([
-      pool.query(
-        `SELECT * FROM log_statements${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
-      ),
-      pool.query(
-        `SELECT * FROM buy_rent_statements${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
-      ),
-      pool.query(
-        `SELECT * FROM file_note${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
-      ),
-    ]);
+    const [logResult, buyRentResult, fileNoteResult, hireAssetResult] =
+      await Promise.all([
+        pool.query(
+          `SELECT * FROM log_statements${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
+        ),
+        pool.query(
+          `SELECT * FROM buy_rent_statements${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
+        ),
+        pool.query(
+          `SELECT * FROM file_note${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
+        ),
+        pool.query(
+          `SELECT r.*,COALESCE(
+          json_agg(
+          json_build_object(
+		      'role', a.role,
+            'comments', a.comments,
+            'date',a.timestamp )
+            ) FILTER (WHERE a.id IS NOT NULL),
+            '[]'
+          ) AS approver_info  FROM receipts r LEFT JOIN approverdetails a on r.id = a.cs_id  ${pendingHireAssetFilter} GROUP by r.id ORDER BY r.created_at DESC LIMIT 70 `,
+        ),
+      ]);
 
     const processRows = (rows) =>
       rows
@@ -116,6 +129,7 @@ export const fetchPendingApprovalsBySLA = async ({
       logStatements: processRows(logResult.rows),
       buyRentStatements: processRows(buyRentResult.rows),
       fileNotes: processRows(fileNoteResult.rows),
+      hireAsset: processRows(hireAssetResult.rows),
     };
   } catch (error) {
     throw new Error(`fetchPendingApprovalsBySLA failed: ${error.message}`);

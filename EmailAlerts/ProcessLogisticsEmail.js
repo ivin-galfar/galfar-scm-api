@@ -4,14 +4,6 @@ import { sentemail } from "../Models/logisticsModel.js";
 import { PmCmNames } from "../Models/projectModel.js";
 import { emaillogslg } from "../Models/emailModel.js";
 
-const getPendingRole = (status) => {
-  if (!status || typeof status !== "string") return null;
-  const match = status.match(/pending for\s+(.+)$/i);
-  if (!match) return null;
-  const role = match[1].trim().toLowerCase();
-  return role === "sfm" ? "fm" : role;
-};
-
 export const ProcessLogisticsEmail = async ({
   status,
   project_code,
@@ -78,8 +70,6 @@ export const ProcessLogisticsEmail = async ({
   let nextRole = "";
   if (["approved", "rejected", "review"].includes(status)) {
     nextRole = "initlg";
-  } else if (SLA) {
-    nextRole = getPendingRole(status) || nextRoleMap[role];
   } else {
     nextRole = nextRoleMap[role];
   }
