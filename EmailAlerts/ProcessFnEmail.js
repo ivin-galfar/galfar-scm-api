@@ -23,6 +23,14 @@ export const ProcessFnEmail = async ({
   SLA = false,
   date_flag,
 }) => {
+  const getPendingRole = (status) => {
+    if (!status || typeof status !== "string") return null;
+    const match = status?.match(/pending for\s+(.+)$/i);
+    if (!match) return null;
+    const pendingRole = match[1]?.trim().toLowerCase();
+    return pendingRole === "sfm" ? "fm" : pendingRole;
+  };
+
   const filenotesubrole =
     type === "file_note" && ["TFW", "General"].includes(category) ? "gm" : "fm";
   const iocsubrole =
@@ -54,6 +62,8 @@ export const ProcessFnEmail = async ({
           hod: isInsurance,
           gm: "ceo",
         };
+
+  const pendingRole = getPendingRole(status);
   let nextRole = "";
   let ccemail = [];
   const isTerminalStatus = ["approved", "rejected", "review"]?.includes(
@@ -61,6 +71,9 @@ export const ProcessFnEmail = async ({
   );
   let submitted_by = "";
 
+  if (SLA && pendingRole) {
+    nextRole = pendingRole;
+  }
   if (isTerminalStatus) {
     submitted_by = role ? role.toUpperCase() : "";
   } else if (category == "FWA" || category == "Demob") {
