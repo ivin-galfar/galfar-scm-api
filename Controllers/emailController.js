@@ -191,7 +191,7 @@ export const PwdResetReq = async (req, res) => {
       },
     });
 
-    const resetUrl = `${process.env.ENVIRONMENT == "production" ? process.env.PROD_URL : process.env.DEV_URL}resetpwd?token=${resetLinkToken}${expiry ? `&expiry=${encodeURIComponent(expiry)}` : ""}`;
+    const resetUrl = `${process.env.ENVIRONMENT == "production" ? process.env.PROD_URL : process.env.DEV_URL}/resetpwd?token=${resetLinkToken}${expiry ? `&expiry=${encodeURIComponent(expiry)}` : ""}`;
     const expiryText = expiry
       ? new Date(expiry).toLocaleString("en-AE", {
           timeZone: "Asia/Dubai",
