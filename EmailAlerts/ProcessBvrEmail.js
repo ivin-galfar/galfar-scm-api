@@ -2,14 +2,6 @@ import nodemailer from "nodemailer";
 import { getEmailsByRole } from "../Models/userModel.js";
 import { emaillogs } from "../Models/emailModel.js";
 
-const getPendingRole = (status) => {
-  if (!status || typeof status !== "string") return null;
-  const match = status.match(/pending for\s+(.+)$/i);
-  if (!match) return null;
-  const pendingRole = match[1].trim().toLowerCase();
-  return pendingRole === "sfm" ? "fm" : pendingRole;
-};
-
 export const ProcessBvrEmail = async ({
   id,
   item,
@@ -30,12 +22,9 @@ export const ProcessBvrEmail = async ({
     gm: "ceo",
   };
 
-  const pendingRole = getPendingRole(status);
   let nextRole = "";
   if (["approved", "rejected", "review"].includes(status)) {
     nextRole = "inita";
-  } else if (SLA && pendingRole) {
-    nextRole = pendingRole;
   } else {
     nextRole = nextRoleMap[role];
   }

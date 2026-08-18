@@ -4,13 +4,6 @@ import {
   getEmailsByRole,
   getMultipleEmailsByRole,
 } from "../Models/userModel.js";
-const getPendingRole = (status) => {
-  if (!status || typeof status !== "string") return null;
-  const match = status?.match(/pending for\s+(.+)$/i);
-  if (!match) return null;
-  const pendingRole = match[1]?.trim().toLowerCase();
-  return pendingRole === "sfm" ? "fm" : pendingRole;
-};
 
 export const ProcessFnEmail = async ({
   id,
@@ -61,17 +54,12 @@ export const ProcessFnEmail = async ({
           hod: isInsurance,
           gm: "ceo",
         };
-  const pendingRole = getPendingRole(status);
   let nextRole = "";
   let ccemail = [];
   const isTerminalStatus = ["approved", "rejected", "review"]?.includes(
     status?.toLowerCase(),
   );
   let submitted_by = "";
-
-  if (SLA && pendingRole) {
-    nextRole = pendingRole;
-  }
 
   if (isTerminalStatus) {
     submitted_by = role ? role.toUpperCase() : "";

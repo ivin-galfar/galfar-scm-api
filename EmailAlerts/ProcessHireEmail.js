@@ -16,15 +16,15 @@ export const ProcessHireEmail = async ({
   doc_no,
   approvedPdfUrl,
   cs_id,
+  SLA = false,
+  date_flag,
 }) => {
   const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
 
   try {
     const cs_exists = await fetchoneReceiptFormData(cs_id);
     if (!cs_exists.formData || Object.keys(cs_exists.formData).length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Receipt not found." });
+      throw new Error("No recipients found. Approval flow stopped.");
     }
     const roleMap = {
       inith: 1,
@@ -138,7 +138,7 @@ export const ProcessHireEmail = async ({
          <div style=" color: #333;">
            <p style="margin: 0 0 16px;">Dear User,</p>
            <p style="margin: 0 0 16px; color: #333; font-size: 14px; line-height: 1.6;">
-            ${status.toLowerCase() == "approved" ? "This is to inform you that the following document(s) have been Approved. The supporting documents has been merged with the approved statement with this email." : status.toLowerCase() == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status.toLowerCase() == "review" ? "This is to inform you that the following document(s) have been submitted for review." : "This is to inform you that the following document(s) have been submitted for approval."} 
+            ${status.toLowerCase() == "approved" ? "This is to inform you that the following document(s) have been Approved. The supporting documents has been merged with the approved statement with this email." : status.toLowerCase() == "rejected" ? "This is to inform you that the following document(s) have been Rejected." : status.toLowerCase() == "review" ? "This is to inform you that the following document(s) have been submitted for review." : `This is to inform you that the following document(s) have been submitted for approval${SLA ? ` on ${date_flag}` + "." : "."}`} 
            </p>
              <div style="margin: 16px 0; padding: 18px; border-radius: 8px; color: #333; font-size: 14px; line-height: 1.0;">
                <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
@@ -211,6 +211,14 @@ export const ProcessHireEmail = async ({
            </div>
        </div>
      `,
+      ...(SLA && {
+        priority: "high",
+        headers: {
+          "X-Priority": "1",
+          "X-MSMail-Priority": "High",
+          Importance: "high",
+        },
+      }),
     };
 
     const [emailInfo] = await Promise.all([
