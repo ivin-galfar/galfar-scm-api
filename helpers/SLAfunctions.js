@@ -82,6 +82,7 @@ const buildFnArgs = (statement, date_flag) => ({
 const buildHireAssetArgs = (statement, date_flag) => ({
   cs_id: statement.id,
   hiringname: statement.hiringname,
+  projectvalue: statement.projectvalue,
   date: statement.dateValue,
   role: statement.approver_info?.at(-1)?.role ?? "",
   doc_no: statement.doc_no,
@@ -96,7 +97,6 @@ const buildHireAssetArgs = (statement, date_flag) => ({
   type: statement.type,
   SLA: true,
   date_flag: date_flag,
-  role: statement.approver_info?.at(-1)?.role ?? "",
 });
 
 export const Processslafunctions = async (statements = [], statementType) => {

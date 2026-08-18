@@ -232,6 +232,6 @@ export const ProcessHireEmail = async ({
       emailInfo,
     };
   } catch (error) {
-    throw new Error(error?.message || "Failed to send logistics email.");
+    throw new Error(error?.message || "Failed to send Hire/Assets email.");
   }
 };
