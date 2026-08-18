@@ -48,10 +48,7 @@ export const ProcessHireEmail = async ({
     }
 
     if (!nextRole) {
-      return res.status(400).json({
-        success: false,
-        message: `No next approver found for role: ${role}`,
-      });
+      throw new Error(`No next approver found for role: ${role}`);
     }
     let recipients = await getEmailsByRole(nextRole);
 

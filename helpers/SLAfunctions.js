@@ -106,7 +106,7 @@ export const Processslafunctions = async (statements = [], statementType) => {
 
   for (const statement of statements) {
     const statement_id = statement.id || statement.cs_id;
-    const statement_type = statementType;
+    const statement_type = statement.type || statementType;
     const lastApprover = statement.approver_info?.at(-1);
     const triggerSummary = await getStatementEmailTriggerSummary({
       statement_id,
