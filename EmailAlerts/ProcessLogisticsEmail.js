@@ -96,27 +96,28 @@ export const ProcessLogisticsEmail = async ({
         pass: process.env.EMAIL_PASSWORD,
       },
     });
+    let mailAttachments = [];
+    if (!SLA) {
+      const exportedStatementFilename = approvedPdfUrl
+        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+          "Exported Statement.pdf"
+        : null;
 
-    const exportedStatementFilename = approvedPdfUrl
-      ? approvedPdfUrl.split("/").pop().split("?")[0] ||
-        "Exported Statement.pdf"
-      : null;
+      const exportedStatementAttachment = approvedPdfUrl
+        ? [
+            {
+              filename: exportedStatementFilename,
+              path: approvedPdfUrl,
+            },
+          ]
+        : [];
 
-    const exportedStatementAttachment = approvedPdfUrl
-      ? [
-          {
-            filename: exportedStatementFilename,
-            path: approvedPdfUrl,
-          },
-        ]
-      : [];
-
-    const supportingDocs = (file || []).map((url, index) => ({
-      filename: filename?.[index] || "",
-      path: url,
-    }));
-
-    const mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
+      const supportingDocs = (file || []).map((url, index) => ({
+        filename: filename?.[index] || "",
+        path: url,
+      }));
+      mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
+    }
 
     const mailOptions = {
       from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,

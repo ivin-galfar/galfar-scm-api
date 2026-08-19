@@ -94,27 +94,29 @@ export const ProcessFnEmail = async ({
   }
 
   let recipients = [];
+  let mailAttachments = [];
+  if (!SLA) {
+    const exportedStatementFilename = exportedstatement
+      ? exportedstatement.split("/").pop().split("?")[0] ||
+        "Exported Statement.pdf"
+      : null;
 
-  const exportedStatementFilename = exportedstatement
-    ? exportedstatement.split("/").pop().split("?")[0] ||
-      "Exported Statement.pdf"
-    : null;
+    const exportedStatementAttachment = exportedstatement
+      ? [
+          {
+            filename: exportedStatementFilename,
+            path: exportedstatement,
+          },
+        ]
+      : [];
 
-  const exportedStatementAttachment = exportedstatement
-    ? [
-        {
-          filename: exportedStatementFilename,
-          path: exportedstatement,
-        },
-      ]
-    : [];
+    const supportingDocs = (file || []).map((url, index) => ({
+      filename: file_name?.[index] || "",
+      path: url,
+    }));
+    mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
+  }
 
-  const supportingDocs = (file || []).map((url, index) => ({
-    filename: file_name[index] || "",
-    path: url,
-  }));
-
-  const mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
   try {
     if (nextRole == "initfn") {
       if (type == "file_note") {

@@ -73,27 +73,28 @@ export const ProcessHireEmail = async ({
         pass: process.env.EMAIL_PASSWORD,
       },
     });
+    let mailAttachments = [];
+    if (!SLA) {
+      const exportedStatementFilename = approvedPdfUrl
+        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
+          "Exported Statement.pdf"
+        : null;
 
-    const exportedStatementFilename = approvedPdfUrl
-      ? approvedPdfUrl.split("/").pop().split("?")[0] ||
-        "Exported Statement.pdf"
-      : null;
+      const exportedStatementAttachment = approvedPdfUrl
+        ? [
+            {
+              filename: exportedStatementFilename,
+              path: approvedPdfUrl,
+            },
+          ]
+        : [];
 
-    const exportedStatementAttachment = approvedPdfUrl
-      ? [
-          {
-            filename: exportedStatementFilename,
-            path: approvedPdfUrl,
-          },
-        ]
-      : [];
-
-    const supportingDocs = (file || []).map((url, index) => ({
-      filename: filename?.[index] || "",
-      path: url,
-    }));
-
-    const mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
+      const supportingDocs = (file || []).map((url, index) => ({
+        filename: filename?.[index] || "",
+        path: url,
+      }));
+      mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
+    }
     let mergedDocs = [];
     let allArePdf = true;
     for (const attachment of mailAttachments) {
@@ -230,8 +231,6 @@ export const ProcessHireEmail = async ({
       reminding_role: nextRole,
     };
   } catch (error) {
-    console.log("error", error);
-
     throw new Error(error || "Failed to send Hire/Assets email.");
   }
 };

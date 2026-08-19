@@ -93,7 +93,7 @@ const buildHireAssetArgs = (statement, date_flag) => ({
   exportedstatement:
     statement.exportedstatement || statement.exportedStatement || null,
   file: statement.file,
-  file_name: statement.file_name,
+  filename: statement.filename,
   type: statement.type,
   SLA: true,
   date_flag: date_flag,
@@ -151,8 +151,6 @@ export const Processslafunctions = async (statements = [], statementType) => {
 
       triggerStatus = "sent";
     } catch (error) {
-      console.log("inga", error);
-
       emailResult = {
         success: false,
         message: error || "SLA email send failed.",
