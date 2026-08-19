@@ -151,6 +151,8 @@ export const Processslafunctions = async (statements = [], statementType) => {
 
       triggerStatus = "sent";
     } catch (error) {
+      console.log("inga", error);
+
       emailResult = {
         success: false,
         message: error || "SLA email send failed.",
