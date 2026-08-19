@@ -274,6 +274,7 @@ export const filenote = async (
         values.push("FWA");
       } else if (
         !normalizedRoles.includes("gm") &&
+        !normalizedRoles.includes("ceo") &&
         !normalizedRoles.includes("initfn")
       ) {
         whereConditions.push(
