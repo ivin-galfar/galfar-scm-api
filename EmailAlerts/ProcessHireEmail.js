@@ -89,7 +89,7 @@ export const ProcessHireEmail = async ({
       : [];
 
     const supportingDocs = (file || []).map((url, index) => ({
-      filename: filename[index] || "",
+      filename: filename?.[index] || "",
       path: url,
     }));
 
