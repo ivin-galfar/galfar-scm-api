@@ -153,7 +153,7 @@ export const Processslafunctions = async (statements = [], statementType) => {
     } catch (error) {
       emailResult = {
         success: false,
-        message: error.message || "SLA email send failed.",
+        message: error || "SLA email send failed.",
       };
     }
 
@@ -177,6 +177,7 @@ export const Processslafunctions = async (statements = [], statementType) => {
           ? "Logistics"
           : "Plant",
       SLAhours: SLAhours,
+      role: emailResult?.reminding_role,
     });
 
     results.push({

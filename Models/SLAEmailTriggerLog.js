@@ -32,8 +32,8 @@ export const insertStatementEmailTriggerLog = async ({
   dept,
   last_approved,
   SLAhours,
+  role,
 }) => {
-
   try {
     // Check if a record for this document (id/type/category) already exists
     const { rows: existing } = await pool.query(
@@ -78,8 +78,8 @@ export const insertStatementEmailTriggerLog = async ({
     // No existing record -> insert a new one
     const { rows } = await pool.query(
       `INSERT INTO statement_email_trigger_log
-        (document_id, department,last_approved_at,triggered_at, triggered_count, status, email_sent, document_type, document_category, log_info,age_hours)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10,$11) `,
+        (document_id, department,last_approved_at,triggered_at, triggered_count, status, email_sent, document_type, document_category, log_info,age_hours,role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10,$11,$12) `,
       [
         document_id,
         dept,
@@ -92,6 +92,7 @@ export const insertStatementEmailTriggerLog = async ({
         document_category,
         JSON.stringify(log_info),
         SLAhours,
+        role,
       ],
     );
 

@@ -227,8 +227,9 @@ export const ProcessHireEmail = async ({
       success: true,
       message: "Email sent successfully.",
       emailInfo,
+      reminding_role: nextRole,
     };
   } catch (error) {
-    throw new Error(error?.message || "Failed to send Hire/Assets email.");
+    throw new Error(error || "Failed to send Hire/Assets email.");
   }
 };

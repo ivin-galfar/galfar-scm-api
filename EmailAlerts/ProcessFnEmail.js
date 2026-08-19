@@ -307,6 +307,7 @@ export const ProcessFnEmail = async ({
       message: "Email sent successfully.",
       emailInfo,
       approvedInfo: approverdetails,
+      reminding_role: nextRole,
     };
   } catch (error) {
     throw new Error(error?.message || "Failed to send logistics email.");
