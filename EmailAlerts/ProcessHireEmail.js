@@ -74,6 +74,8 @@ export const ProcessHireEmail = async ({
       },
     });
     let mailAttachments = [];
+    let emailAttachments;
+
     if (!SLA) {
       const exportedStatementFilename = approvedPdfUrl
         ? approvedPdfUrl.split("/").pop().split("?")[0] ||
@@ -94,32 +96,31 @@ export const ProcessHireEmail = async ({
         path: url,
       }));
       mailAttachments = [...exportedStatementAttachment, ...supportingDocs];
-    }
-    let mergedDocs = [];
-    let allArePdf = true;
-    for (const attachment of mailAttachments) {
-      const azureResponse = await fetch(attachment.path);
-      const contentType = azureResponse.headers.get("content-type");
-      if (contentType !== "application/pdf") {
-        allArePdf = false;
-        break;
+
+      let mergedDocs = [];
+      let allArePdf = true;
+
+      for (const attachment of mailAttachments) {
+        const azureResponse = await fetch(attachment.path);
+        const contentType = azureResponse.headers.get("content-type");
+        if (contentType !== "application/pdf") {
+          allArePdf = false;
+          break;
+        }
       }
-    }
 
-    let emailAttachments;
-
-    if (allArePdf && status.toLowerCase() == "approved") {
-      mergedDocs = await mergedPdf(mailAttachments);
-
-      emailAttachments = [
-        {
-          filename: exportedStatementFilename,
-          content: mergedDocs,
-          contentType: "application/pdf",
-        },
-      ];
-    } else {
-      emailAttachments = mailAttachments;
+      if (allArePdf && status.toLowerCase() == "approved") {
+        mergedDocs = await mergedPdf(mailAttachments);
+        emailAttachments = [
+          {
+            filename: exportedStatementFilename,
+            content: mergedDocs,
+            contentType: "application/pdf",
+          },
+        ];
+      } else {
+        emailAttachments = mailAttachments;
+      }
     }
 
     const mailOptions = {
