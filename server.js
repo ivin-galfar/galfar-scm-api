@@ -11,6 +11,7 @@ import DepartmentRoutes from "./Routes/DepartmentRoutes.js";
 import LogisticsRoutes from "./Routes/LogisticsRoutes.js";
 import BRRoutes from "./Routes/BuyRentRoutes.js";
 import FNRoutes from "./Routes/FileNoteRoutes.js";
+import ApprovalDataRoutes from "./Routes/ApprovalDataRoutes.js";
 // import SharePointRoutes from "./Routes/sharepointRoutes.js";
 import verifyToken from "./Utils/jwtTokenValidation.js";
 import { cronemails } from "./cron/emailCron.js";
@@ -47,6 +48,7 @@ app.use("/logistics", verifyToken, LogisticsRoutes);
 app.use("/brstatement", verifyToken, BRRoutes);
 app.use("/filenote", verifyToken, FNRoutes);
 app.use("/projects", verifyToken, ProjectRoutes);
+app.use("/analytics", verifyToken, ApprovalDataRoutes);
 
 // app.use("/sharepoint", SharePointRoutes);
 app.get("/", (req, res) => res.send("API is running"));
