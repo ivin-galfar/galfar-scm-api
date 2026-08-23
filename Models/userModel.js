@@ -69,6 +69,16 @@ export const getUserByResetToken = async (hashedToken) => {
   return rows[0] || null;
 };
 
+export const getuserById = async (userId) => {
+  const { rows } = await pool.query(
+    `SELECT *
+   FROM users
+   WHERE id = $1`,
+    [userId],
+  );
+  return rows[0];
+};
+
 export const updatePassword = async (userId, newPassword) => {
   const hashedPassword = await Hashpassword(newPassword);
 
