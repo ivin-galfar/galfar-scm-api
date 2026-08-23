@@ -19,8 +19,6 @@ export const getStatementEmailTriggerSummary = async ({
 };
 
 export const insertStatementEmailTriggerLog = async ({
-  statement_id,
-  statement_type,
   trigger_time,
   trigger_number,
   status,

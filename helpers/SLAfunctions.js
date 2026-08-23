@@ -20,7 +20,7 @@ const shouldSendSLAEmail = ({ triggered_count, triggered_at }) => {
   return hoursSinceLastTrigger;
 };
 
-const buildLogisticsArgs = (statement, date_flag) => ({
+const buildLogisticsArgs = (statement, date_flag, triggerNumber) => ({
   status: statement.status,
   project_code: statement.project ?? statement.project_code,
   cargo_details: statement.cargo_details,
@@ -43,9 +43,10 @@ const buildLogisticsArgs = (statement, date_flag) => ({
   cs_id: statement.id || statement.cs_id,
   SLA: true,
   date_flag: date_flag,
+  triggerNumber,
 });
 
-const buildBvrArgs = (statement, date_flag) => ({
+const buildBvrArgs = (statement, date_flag, triggerNumber) => ({
   id: statement.id,
   item: statement.item,
   type: statement.chosentype,
@@ -57,9 +58,10 @@ const buildBvrArgs = (statement, date_flag) => ({
   role: statement.approver_info?.at(-1)?.role ?? "",
   SLA: true,
   date_flag: date_flag,
+  triggerNumber,
 });
 
-const buildFnArgs = (statement, date_flag) => ({
+const buildFnArgs = (statement, date_flag, triggerNumber) => ({
   id: statement.id,
   dept_id: statement.department_id ?? statement.dept_id,
   role: statement.approver_info?.at(-1)?.role ?? "",
@@ -77,9 +79,10 @@ const buildFnArgs = (statement, date_flag) => ({
   category: statement.category,
   SLA: true,
   date_flag: date_flag,
+  triggerNumber,
 });
 
-const buildHireAssetArgs = (statement, date_flag) => ({
+const buildHireAssetArgs = (statement, date_flag, triggerNumber) => ({
   cs_id: statement.id,
   hiringname: statement.hiringname,
   projectvalue: statement.projectvalue,
@@ -97,6 +100,7 @@ const buildHireAssetArgs = (statement, date_flag) => ({
   type: statement.type,
   SLA: true,
   date_flag: date_flag,
+  triggerNumber,
 });
 
 export const Processslafunctions = async (statements = [], statementType) => {
@@ -135,15 +139,19 @@ export const Processslafunctions = async (statements = [], statementType) => {
     try {
       if (statementType === "logistics") {
         emailResult = await ProcessLogisticsEmail(
-          buildLogisticsArgs(statement, date_flag),
+          buildLogisticsArgs(statement, date_flag, triggerNumber),
         );
       } else if (statementType === "buyvsrent") {
-        emailResult = await ProcessBvrEmail(buildBvrArgs(statement, date_flag));
+        emailResult = await ProcessBvrEmail(
+          buildBvrArgs(statement, date_flag, triggerNumber),
+        );
       } else if (statementType === "filenote") {
-        emailResult = await ProcessFnEmail(buildFnArgs(statement, date_flag));
+        emailResult = await ProcessFnEmail(
+          buildFnArgs(statement, date_flag, triggerNumber),
+        );
       } else if (statementType === "hiringasset") {
         emailResult = await ProcessHireEmail(
-          buildHireAssetArgs(statement, date_flag),
+          buildHireAssetArgs(statement, date_flag, triggerNumber),
         );
       } else {
         continue;

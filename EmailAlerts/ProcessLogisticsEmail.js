@@ -20,6 +20,7 @@ export const ProcessLogisticsEmail = async ({
   cs_id,
   SLA = false,
   date_flag,
+  triggerNumber,
 }) => {
   const [day, month, year] = created_at.split("/");
   const formattedDate = new Date(
@@ -124,7 +125,7 @@ export const ProcessLogisticsEmail = async ({
       to: recipients,
       attachments: status == "approved" ? mailAttachments : [],
       subject: `${
-        SLA ? "Reminder - Approval Required - " : ""
+        SLA ? `Reminder #${triggerNumber} - Approval Required - ` : ""
       }Comparative Statement (Logistics) - ${shipment_no}/${cargo_details}/${
         project ? project + " : " : ""
       }${

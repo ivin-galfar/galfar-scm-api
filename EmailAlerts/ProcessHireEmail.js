@@ -18,6 +18,7 @@ export const ProcessHireEmail = async ({
   cs_id,
   SLA = false,
   date_flag,
+  triggerNumber,
 }) => {
   const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
 
@@ -127,7 +128,7 @@ export const ProcessHireEmail = async ({
       from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
       to: recipients,
       attachments: status.toLowerCase() == "approved" ? emailAttachments : [],
-      subject: `Comparative Statement  (${formattedType})- ${
+      subject: `${SLA ? `Reminder #${triggerNumber} - ` : ""}Approval Required : Comparative Statement (${formattedType}) - ${
         nextRole === "inith" || nextRole === "inita"
           ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
           : "Approval Required"

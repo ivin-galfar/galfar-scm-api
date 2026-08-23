@@ -14,6 +14,7 @@ export const ProcessBvrEmail = async ({
   role,
   SLA = false,
   date_flag,
+  triggerNumber,
 }) => {
   const nextRoleMap = {
     inita: "hod",
@@ -69,7 +70,7 @@ export const ProcessBvrEmail = async ({
       to: recipients,
       attachments: status == "approved" ? mailAttachments : [],
       subject: SLA
-        ? `Reminder - Approval Required | Comparative Statement (BVR) - ${item}`
+        ? `Reminder #${triggerNumber} - Approval Required | Comparative Statement (BVR) - ${item}`
         : `${
             nextRole === "inita"
               ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()

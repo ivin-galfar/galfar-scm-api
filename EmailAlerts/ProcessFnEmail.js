@@ -22,6 +22,7 @@ export const ProcessFnEmail = async ({
   category,
   SLA = false,
   date_flag,
+  triggerNumber,
 }) => {
   const getPendingRole = (status) => {
     if (!status || typeof status !== "string") return null;
@@ -218,7 +219,7 @@ export const ProcessFnEmail = async ({
       cc: ccemail,
       subject: `${
         SLA
-          ? `Reminder - Approval Required | ${type === "file_note" ? "File Note" : "IOC"} - ${name}`
+          ? `Reminder #${triggerNumber} - Approval Required | ${type === "file_note" ? "File Note" : "IOC"} - ${name}`
           : `${type === "file_note" ? "File Note" : "IOC"} - ${
               nextRole === "initfn" ||
               nextRole === "initpr" ||
