@@ -1,4 +1,5 @@
 import pool from "../Config/db.js";
+import { getLatestApprovalEntry } from "../helpers/SLAfunctions.js";
 
 const sourceQueries = [
   [
@@ -50,7 +51,7 @@ const pendingForRole = (status, roles) => {
         currentRole,
       )
     ) {
-      return normalizedStatus.startsWith("pending");
+      return false;
     }
     if (currentRole === "fm") {
       return ["pending for fm", "pending for sfm"].includes(normalizedStatus);
@@ -59,26 +60,19 @@ const pendingForRole = (status, roles) => {
   });
 };
 
-const approvedByRole = (approverInfo, roles, recordStatus) => {
-  const entryRole = String(approverInfo?.role ?? "")
-    .toLowerCase()
-    .trim();
-  const approvalStatus = String(
-    approverInfo?.approverstatus ??
-      approverInfo?.status ??
-      approverInfo?.action ??
-      "",
-  )
-    .toLowerCase()
-    .trim();
-  return (
-    roles.includes(entryRole) &&
-    (approvalStatus === "approved" ||
-      (!approvalStatus &&
-        String(recordStatus ?? "")
-          .toLowerCase()
-          .trim() === "approved"))
-  );
+const statusByRole = (approverInfo, roles, status, requiredStatus) => {
+  if (
+    ["inita", "initfn", "inith", "initpr", "initdc", "view"].some((r) =>
+      roles.includes(r),
+    )
+  ) {
+    return false;
+  }
+
+  const entryRole = Array.isArray(approverInfo)
+    ? approverInfo.some((r) => roles.includes(r.role))
+    : false;
+  return entryRole && status?.toLowerCase() === requiredStatus;
 };
 
 const countForYouBySource = (records) =>
@@ -114,16 +108,33 @@ export const approvalData = async ({
   role,
   isAdmin,
   includeDeleted = false,
+  pr_code,
 } = {}) => {
   try {
     const departments = asArray(dept);
     const roles = asArray(role);
+    const projectCodes = asArray(pr_code);
+
     const queries = sourceQueries.map(async ([source, query, department]) => {
-      const { rows } = await pool.query(
-        includeDeleted
-          ? query
-          : `${query} ${department == "plant_hireasset" ? " WHERE deleted = 0 GROUP by r.id" : " WHERE deleted = 0"}`,
-      );
+      const params = [];
+      const conditions = [];
+      if (!includeDeleted) conditions.push("deleted = 0");
+      if ((isPm || isCm) && source == "log_statements") {
+        conditions.push("project::text = ANY($1::text[])");
+        params.push(projectCodes);
+      } else if ((isPm || isCm) && source == "file_note") {
+        conditions.push("project_code::text = ANY($1::text[])");
+        params.push(projectCodes);
+      }
+      const filteredQuery = conditions.length
+        ? `${query} WHERE ${conditions.join(" AND ")}`
+        : query;
+      const finalQuery =
+        department == "plant_hireasset"
+          ? `${filteredQuery} GROUP by r.id`
+          : filteredQuery;
+
+      const { rows } = await pool.query(finalQuery, params);
 
       return rows.map((data) => {
         const record = {
@@ -193,6 +204,60 @@ export const approvalData = async ({
       pendingForRole(record.data.status, roles),
     );
 
+    const approvedRecords = forYouRecords.filter((record) =>
+      statusByRole(
+        record.data.approver_info,
+        roles,
+        record.data.status,
+        "approved",
+      ),
+    );
+
+    const rejectedRecords = forYouRecords.filter((record) =>
+      statusByRole(
+        record.data.approver_info,
+        roles,
+        record.data.status,
+        "rejected",
+      ),
+    );
+
+    const nearingReminder = forYouRecords.filter((record) => {
+      if (!record.data.status?.toLowerCase().startsWith("pending")) {
+        return false;
+      }
+      if (
+        !Array.isArray(record?.data?.approver_info) ||
+        record?.data?.approver_info?.length === 0
+      ) {
+        return false;
+      }
+      const latest_role = record?.data?.approver_info?.at(-1)?.role ?? "";
+
+      if (role != latest_role) {
+        return false;
+      }
+
+      const latestEntry = getLatestApprovalEntry(
+        record.data.id,
+        record.data.approver_info,
+      );
+
+      if (!latestEntry) return false;
+
+      const now = new Date();
+      if (!latestEntry) return null;
+
+      const ageMs = now - latestEntry.datetime;
+      if (ageMs < 0) return null;
+      const thresholdMs = process.env.THRESHOLDHOURS * 60 * 60 * 1000;
+
+      const isWithinThreshold = ageMs <= thresholdMs;
+      if (isWithinThreshold) return null;
+
+      return latestEntry;
+    });
+
     let submittedByYou = [];
     let returnedtoYou = [];
 
@@ -232,7 +297,7 @@ export const approvalData = async ({
         } else {
           label = "Asset CS";
         }
-      } else if (source == "logistics") {
+      } else if (source == "log_statements") {
         namefield = record.data.cargo_details;
         label = "Logistics CS";
       } else if (source == "file_note") {
@@ -255,9 +320,6 @@ export const approvalData = async ({
       return acc;
     }, {});
 
-    const approvedRecords = forYouRecords.filter((record) =>
-      approvedByRole(record.data.approver_info, roles, record.data.status),
-    );
     const wholeRawData = {
       data: data,
       counts: {
@@ -273,14 +335,20 @@ export const approvalData = async ({
           ...countStatuses(approvedRecords),
           by_source: countForYouBySource(approvedRecords),
         },
+        rejected_by_you: {
+          ...countStatuses(rejectedRecords),
+          by_source: countForYouBySource(rejectedRecords),
+        },
         submitted_by_you: submittedByYou,
         retuned_to_you: returnedtoYou,
+        nearing_reminder: nearingReminder,
       },
     };
 
     return {
       approved_by_you: wholeRawData.for_you.approved_by_you.total,
       pending_for_you: wholeRawData.for_you.pending_for_you.total,
+      rejected_by_you: wholeRawData.for_you.rejected_by_you.total,
       all_statements: wholeRawData.counts.consolidated.total,
       total_approved: wholeRawData.counts.consolidated.by_status.approved,
       total_rejected: wholeRawData.counts.consolidated.by_status.rejected,
@@ -288,8 +356,11 @@ export const approvalData = async ({
       pending_data_for_you: pendingDataForYou,
       submitted_by_you: wholeRawData.for_you.submitted_by_you,
       returnedtoYou: wholeRawData.for_you.retuned_to_you,
+      nearingReminder: wholeRawData.for_you.nearing_reminder,
     };
   } catch (error) {
+    console.log(error);
+
     throw new Error(`approvalData failed: ${error.message}`);
   }
 };
