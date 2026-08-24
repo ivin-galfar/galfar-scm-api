@@ -4,6 +4,7 @@ export const fetchApprovalData = async (req, res) => {
   let updatedRoles = "";
   const roles = req.user.role;
   const isAdmin = req.user.is_admin;
+  const project_code = req.user.pr_code;
 
   if (isAdmin) {
     const matchedAdminRoles = roles.filter((role) =>
@@ -26,6 +27,7 @@ export const fetchApprovalData = async (req, res) => {
       dept: req.query.dept ?? req.query.department,
       role: updatedRoles,
       isAdmin: isAdmin,
+      pr_code: project_code,
       includeDeleted: req.query.includeDeleted === false,
     });
 

@@ -199,3 +199,45 @@ export const Processslafunctions = async (statements = [], statementType) => {
 
   return results;
 };
+
+export const parseApproverInfo = (approverInfo) => {
+  if (!approverInfo) return [];
+  if (typeof approverInfo === "string") {
+    try {
+      return JSON.parse(approverInfo);
+    } catch (error) {
+      return [];
+    }
+  }
+  if (Array.isArray(approverInfo)) return approverInfo;
+  return [];
+};
+
+export const getLatestApprovalEntry = (id, approverInfo) => {
+  const entries = parseApproverInfo(approverInfo);
+
+  return entries
+    .map((entry) => {
+      if (
+        !entry ||
+        typeof entry !== "object" ||
+        (!entry.datetime && !entry.date)
+      )
+        return null;
+      const date = new Date(entry.datetime || entry.date);
+      if (Number.isNaN(date.getTime())) return null;
+      return { ...entry, datetime: date };
+    })
+    .filter(Boolean)
+    .reduce((latest, entry, index) => {
+      if (!latest) {
+        return entry;
+      }
+
+      if (entry.datetime > latest.datetime) {
+        return entry;
+      }
+
+      return latest;
+    }, null);
+};
