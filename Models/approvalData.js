@@ -114,7 +114,8 @@ export const approvalData = async ({
     const departments = asArray(dept);
     const roles = asArray(role);
     const projectCodes = asArray(pr_code);
-
+    const isPm = roles.includes("pm");
+    const isCm = roles.includes("cm");
     const queries = sourceQueries.map(async ([source, query, department]) => {
       const params = [];
       const conditions = [];
