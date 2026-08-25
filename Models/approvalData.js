@@ -1,5 +1,7 @@
 import pool from "../Config/db.js";
+import { initiatorRoles } from "../helpers/helperfunctions.js";
 import { getLatestApprovalEntry } from "../helpers/SLAfunctions.js";
+import { getStatementEmailTriggerSummary } from "./SLAEmailTriggerLog.js";
 
 const sourceQueries = [
   [
@@ -46,12 +48,8 @@ const pendingForRole = (status, roles) => {
     .toLowerCase()
     .trim();
   return roles.some((currentRole) => {
-    if (
-      ["inita", "initfn", "inith", "initpr", "initdc", "view"].includes(
-        currentRole,
-      )
-    ) {
-      return false;
+    if (initiatorRoles.includes(currentRole)) {
+      return normalizedStatus.toLowerCase().startsWith("pending");
     }
     if (currentRole === "fm") {
       return ["pending for fm", "pending for sfm"].includes(normalizedStatus);
@@ -61,11 +59,7 @@ const pendingForRole = (status, roles) => {
 };
 
 const statusByRole = (approverInfo, roles, status, requiredStatus) => {
-  if (
-    ["inita", "initfn", "inith", "initpr", "initdc", "view"].some((r) =>
-      roles.includes(r),
-    )
-  ) {
+  if (initiatorRoles.some((r) => roles.includes(r))) {
     return false;
   }
 
@@ -224,7 +218,10 @@ export const approvalData = async ({
     );
 
     const nearingReminder = forYouRecords.filter((record) => {
-      if (!record.data.status?.toLowerCase().startsWith("pending")) {
+      if (
+        !record.data.status?.toLowerCase().startsWith("pending") ||
+        initiatorRoles.some((r) => r.includes(roles))
+      ) {
         return false;
       }
       if (
@@ -259,16 +256,49 @@ export const approvalData = async ({
       return latestEntry;
     });
 
+    const escalationTriggered = await Promise.allSettled(
+      forYouRecords.map(async (record) => {
+        let statementType = "";
+
+        if (record.source === "log_statements") {
+          statementType = "logistics";
+        } else if (
+          record.source === "receipts" ||
+          record.source === "file_note"
+        ) {
+          statementType = record.data.type;
+        } else if (record.source === "buy_rent_statements") {
+          statementType = "buyvsrent";
+        }
+
+        const triggerSummary = await getStatementEmailTriggerSummary({
+          statement_id: record.data.id,
+          statement_type: statementType,
+        });
+
+        return triggerSummary;
+      }),
+    );
+
+    const yourEscalations = (results) => {
+      return results
+        .filter((result) => result.status === "fulfilled")
+        .filter((result) => roles.includes(result.value.role))
+        .reduce((total, { value }) => {
+          return total + (value.triggered_count || 0);
+        }, 0);
+    };
+
     let submittedByYou = [];
     let returnedtoYou = [];
-
+    let createdByYou = 0;
     if (!isAdmin) {
+      //approved and moved to next level
       submittedByYou = forYouRecords.filter((record) => {
         const approverInfo = record.data?.approver_info;
         if (!Array.isArray(approverInfo) || approverInfo.length === 0) {
           return false;
         }
-
         return approverInfo.some((d) => roles.includes(d.role));
       });
     } else {
@@ -282,6 +312,18 @@ export const approvalData = async ({
 
         return approverInfo.some((d) => roles.includes(d.role)) && isreview;
       });
+    }
+
+    if (isAdmin) {
+      createdByYou = forYouRecords.filter((record) => {
+        const approverInfo = record.data?.approver_info;
+
+        if (!Array.isArray(approverInfo) || approverInfo.length === 0) {
+          return false;
+        }
+
+        return approverInfo.some((d) => roles.includes(d.role));
+      }).length;
     }
 
     const pendingDataForYou = pendingRecordsForYou.reduce((acc, record) => {
@@ -341,8 +383,12 @@ export const approvalData = async ({
           by_source: countForYouBySource(rejectedRecords),
         },
         submitted_by_you: submittedByYou,
+        created_by_you: createdByYou,
         retuned_to_you: returnedtoYou,
         nearing_reminder: nearingReminder,
+        escalations_triggered: !initiatorRoles.some((r) => r.includes(role))
+          ? yourEscalations(escalationTriggered)
+          : 0,
       },
     };
 
@@ -354,10 +400,12 @@ export const approvalData = async ({
       total_approved: wholeRawData.counts.consolidated.by_status.approved,
       total_rejected: wholeRawData.counts.consolidated.by_status.rejected,
       in_progress: wholeRawData.counts.consolidated.total_pending,
-      pending_data_for_you: pendingDataForYou,
+      pending_for_you: pendingDataForYou,
       submitted_by_you: wholeRawData.for_you.submitted_by_you,
-      returnedtoYou: wholeRawData.for_you.retuned_to_you,
-      nearingReminder: wholeRawData.for_you.nearing_reminder,
+      created_by_you: wholeRawData.for_you.created_by_you,
+      retuned_to_you: wholeRawData.for_you.retuned_to_you,
+      nearing_reminder: wholeRawData.for_you.nearing_reminder,
+      escalations_triggered: wholeRawData.for_you.escalations_triggered,
     };
   } catch (error) {
     console.log(error);

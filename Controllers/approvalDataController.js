@@ -16,7 +16,7 @@ export const fetchApprovalData = async (req, res) => {
     ) {
       updatedRoles = ["initpr", "initdc"];
     } else {
-      updatedRoles = matchedAdminRoles.filter((r) => r !== "initfn");
+      updatedRoles = matchedAdminRoles;
     }
   } else {
     updatedRoles = roles.filter((r) => r !== "initfn");

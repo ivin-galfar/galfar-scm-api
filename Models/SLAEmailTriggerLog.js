@@ -6,13 +6,13 @@ export const getStatementEmailTriggerSummary = async ({
 }) => {
   try {
     const { rows } = await pool.query(
-      `SELECT triggered_count,triggered_at
+      `SELECT triggered_count,triggered_at, role
        FROM statement_email_trigger_log
        WHERE document_id = $1 AND document_type = $2 AND email_sent = true`,
       [statement_id, statement_type],
     );
 
-    return rows[0] || { triggered_count: 0, triggered_at: null };
+    return rows[0] || { triggered_count: 0, triggered_at: null, role: null };
   } catch (error) {
     throw new Error(`getStatementEmailTriggerSummary failed: ${error.message}`);
   }
