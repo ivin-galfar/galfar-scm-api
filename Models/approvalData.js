@@ -249,7 +249,9 @@ export const approvalData = async ({
       const ageMs = now - latestEntry.datetime;
       if (ageMs < 0) return null;
       const thresholdMs = process.env.NEARING_THRESHOLDHOURS * 60 * 60 * 1000;
-
+      if (!Number.isFinite(thresholdMs)) {
+        return null;
+      }
       const isWithinThreshold = ageMs <= thresholdMs;
       if (isWithinThreshold) return null;
 
