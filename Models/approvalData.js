@@ -230,9 +230,9 @@ export const approvalData = async ({
       ) {
         return false;
       }
-      const latest_role = record?.data?.approver_info?.at(-1)?.role ?? "";
+      const pending_role = record?.data?.status?.toLowerCase().split(" ")[2];
 
-      if (role != latest_role) {
+      if (!role.includes(pending_role)) {
         return false;
       }
 
