@@ -62,11 +62,12 @@ const statusByRole = (approverInfo, roles, status, requiredStatus) => {
   if (initiatorRoles.some((r) => roles.includes(r))) {
     return false;
   }
-
-  const entryRole = Array.isArray(approverInfo)
-    ? approverInfo.some((r) => roles.includes(r.role))
-    : false;
-  return entryRole && status?.toLowerCase() === requiredStatus;
+  if (!Array.isArray(approverInfo)) {
+    return false;
+  }
+  return approverInfo?.some(
+    (r) => roles.includes(r.role) && status === requiredStatus,
+  );
 };
 
 const countForYouBySource = (records) =>
@@ -111,13 +112,24 @@ export const approvalData = async ({
     const isPm = roles.includes("pm");
     const isCm = roles.includes("cm");
     const queries = sourceQueries.map(async ([source, query, department]) => {
+      const isAllowedForRole =
+        !isPm && !isCm
+          ? true
+          : isPm && ["log_statements", "file_note"].includes(source)
+            ? true
+            : isCm && source === "file_note";
+
+      if (!isAllowedForRole) {
+        return [];
+      }
+
       const params = [];
       const conditions = [];
       if (!includeDeleted) conditions.push("deleted = 0");
-      if ((isPm || isCm) && source == "log_statements") {
+      if (isPm && source === "log_statements") {
         conditions.push("project::text = ANY($1::text[])");
         params.push(projectCodes);
-      } else if ((isPm || isCm) && source == "file_note") {
+      } else if ((isPm || isCm) && source === "file_note") {
         conditions.push("project_code::text = ANY($1::text[])");
         params.push(projectCodes);
       }
@@ -259,30 +271,30 @@ export const approvalData = async ({
       if (!acc[source]) {
         acc[source] = [];
       }
-      let dueperiod = null;
+      let due_period = null;
       let name = "";
       let label = "";
       if (source === "receipts") {
         name = record.data.hiringname;
         label = record.data.type === "hiring" ? "Hiring CS" : "Asset CS";
-        dueperiod = dueHours;
+        due_period = dueHours;
       } else if (source === "log_statements") {
         name = record.data.cargo_details;
         label = "Logistics CS";
-        dueperiod = dueHours;
+        due_period = dueHours;
       } else if (source === "file_note") {
         name = record.data.name;
         label = record.data.type === "file_note" ? "File Note" : "IOC";
-        dueperiod = dueHours;
+        due_period = dueHours;
       } else if (source === "buy_rent_statements") {
         name = record.data.item;
         label = "Buy Vs Rent";
-        dueperiod = dueHours;
+        due_period = dueHours;
       }
       acc[source].push({
         name,
         label,
-        dueperiod,
+        due_period,
       });
       return acc;
     }, {});
