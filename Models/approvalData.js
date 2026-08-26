@@ -217,23 +217,23 @@ export const approvalData = async ({
       ),
     );
 
-    const nearingReminder = forYouRecords.filter((record) => {
+    const nearingReminder = forYouRecords.reduce((acc, record) => {
       if (
         !record.data.status?.toLowerCase().startsWith("pending") ||
         initiatorRoles.some((r) => r.includes(roles))
       ) {
-        return false;
+        return acc;
       }
       if (
         !Array.isArray(record?.data?.approver_info) ||
         record?.data?.approver_info?.length === 0
       ) {
-        return false;
+        return acc;
       }
       const pending_role = record?.data?.status?.toLowerCase().split(" ")[2];
 
       if (!role.includes(pending_role)) {
-        return false;
+        return acc;
       }
 
       const latestEntry = getLatestApprovalEntry(
@@ -241,22 +241,51 @@ export const approvalData = async ({
         record.data.approver_info,
       );
 
-      if (!latestEntry) return false;
+      if (!latestEntry) return acc;
 
       const now = new Date();
-      if (!latestEntry) return null;
+      if (!latestEntry) return acc;
+      const thresholdMs = process.env.NEARING_THRESHOLDHOURS * 60 * 60 * 1000;
 
       const ageMs = now - latestEntry.datetime;
-      if (ageMs < 0) return null;
-      const thresholdMs = process.env.NEARING_THRESHOLDHOURS * 60 * 60 * 1000;
+      let dueHours = ageMs / (1000 * 60 * 60);
+      if (ageMs < 0) return acc;
       if (!Number.isFinite(thresholdMs)) {
         return null;
       }
       const isWithinThreshold = ageMs <= thresholdMs;
-      if (isWithinThreshold) return null;
-
-      return latestEntry;
-    });
+      if (isWithinThreshold) return acc;
+      const source = record.source;
+      if (!acc[source]) {
+        acc[source] = [];
+      }
+      let dueperiod = null;
+      let name = "";
+      let label = "";
+      if (source === "receipts") {
+        name = record.data.hiringname;
+        label = record.data.type === "hiring" ? "Hiring CS" : "Asset CS";
+        dueperiod = dueHours;
+      } else if (source === "log_statements") {
+        name = record.data.cargo_details;
+        label = "Logistics CS";
+        dueperiod = dueHours;
+      } else if (source === "file_note") {
+        name = record.data.name;
+        label = record.data.type === "file_note" ? "File Note" : "IOC";
+        dueperiod = dueHours;
+      } else if (source === "buy_rent_statements") {
+        name = record.data.item;
+        label = "Buy Vs Rent";
+        dueperiod = dueHours;
+      }
+      acc[source].push({
+        name,
+        label,
+        dueperiod,
+      });
+      return acc;
+    }, {});
 
     const escalationTriggered = await Promise.allSettled(
       forYouRecords.map(async (record) => {
