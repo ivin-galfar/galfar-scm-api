@@ -58,7 +58,7 @@ const pendingForRole = (status, roles) => {
   });
 };
 
-const statusByRole = (approverInfo, roles, status, requiredStatus) => {
+const statusByRole = (approverInfo, roles, requiredStatus) => {
   if (initiatorRoles.some((r) => roles.includes(r))) {
     return false;
   }
@@ -66,7 +66,7 @@ const statusByRole = (approverInfo, roles, status, requiredStatus) => {
     return false;
   }
   return approverInfo?.some(
-    (r) => roles.includes(r.role) && status === requiredStatus,
+    (r) => roles.includes(r.role) && r.status === requiredStatus,
   );
 };
 
@@ -212,21 +212,12 @@ export const approvalData = async ({
     );
 
     const approvedRecords = forYouRecords.filter((record) =>
-      statusByRole(
-        record.data.approver_info,
-        roles,
-        record.data.status,
-        "approved",
-      ),
+      statusByRole(record.data.approver_info, roles, "approved"),
     );
+    // console.log(forYouRecords);
 
     const rejectedRecords = forYouRecords.filter((record) =>
-      statusByRole(
-        record.data.approver_info,
-        roles,
-        record.data.status,
-        "rejected",
-      ),
+      statusByRole(record.data.approver_info, roles, "rejected"),
     );
 
     const nearingReminder = forYouRecords.reduce((acc, record) => {
