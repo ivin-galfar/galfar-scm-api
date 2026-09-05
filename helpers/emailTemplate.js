@@ -26,7 +26,7 @@ export const NewsletterTemplate = async ({
       year: "numeric",
     });
     const mailOptions = {
-      from: process.env.FROM,
+      from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
       to: toList,
       subject: `Monthly Comparative Statement Statistics - ${currentMonth}  (${dept}) `,
       html: `<!DOCTYPE html>
@@ -135,7 +135,7 @@ export const NewsletterTemplate = async ({
                                         <td align="center"
                                             bgcolor="#004080"
                                             style="padding:12px 24px; font-weight:bold; font-size:16px;">
-                                           <a href="${dept == "Plant" ? `${process.env.PROD_URL}/dashboard}` : `${process.env.PROD_URL}/dashboardlg}`}"
+                                           <a href="${dept == "Plant" ? `${process.env.PROD_URL}/dashboard}` : `${process.env.PROD_URL}/dashboardlg`}"
                                             style="color:#ffffff; text-decoration:none; display:inline-block;">
                                             View Dashboard
                                             </a>
@@ -148,7 +148,7 @@ export const NewsletterTemplate = async ({
                                 <!-- CTA -->
                                 <div style="text-align: center; margin-top: 30px;">
                                 <a
-                                    href="${dept == "Plant" ? `${process.env.PROD_URL}/dashboard}` : `${process.env.PROD_URL}/dashboardlg}`}"
+                                    href="${dept == "Plant" ? `${process.env.PROD_URL}/dashboard}` : `${process.env.PROD_URL}/dashboardlg`}"
                                     style="
                                     background-color: #2563eb;
                                     color: #ffffff;

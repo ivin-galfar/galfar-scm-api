@@ -1,4 +1,5 @@
 import pool from "../Config/db.js";
+import { initiatorRoles } from "../helpers/helperfunctions.js";
 
 export const feedlogisticsStatement = async ({ formData, tableData }) => {
   const {
@@ -304,7 +305,7 @@ export const fetchAllCsidvalues = async (
     let query = "SELECT * FROM log_statements ";
     if (statusfilter != "All") {
       if (statusfilter == "Pending") {
-        if (!role.includes("initlg")) {
+        if (!initiatorRoles.some((r) => role.includes(r))) {
           conditions.push(` status LIKE ($${values.length + 1}::text)`);
           values.push(`%${role.toLowerCase()}`);
         } else {
@@ -330,7 +331,7 @@ export const fetchAllCsidvalues = async (
       values.push([project]);
     }
 
-    if (role != "initlg") {
+    if (!initiatorRoles.some((r) => role.includes(r))) {
       conditions.push(` status != 'created' AND status IS NOT NULL`);
     }
 

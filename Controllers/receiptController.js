@@ -69,7 +69,7 @@ export const feedReceipts = async (req, res) => {
 };
 
 export const fetchReceipts = async (req, res) => {
-  const {
+  let {
     type,
     module,
     page,
@@ -81,6 +81,18 @@ export const fetchReceipts = async (req, res) => {
     expectedStatuses,
     showinactive,
   } = req.query;
+
+  let role = req.user.role;
+  let isAdmin = req.user.is_admin;
+
+  if (isAdmin) {
+    if (
+      (!role.includes("inith") && type == "hiring") ||
+      (!role.includes("inita") && type == "asset")
+    ) {
+      return res.status(200).json({ receipts_count: 0 });
+    }
+  }
   let Statuses = [];
   if (expectedStatuses) {
     Statuses = req.query.expectedStatuses.split(",");
@@ -134,8 +146,19 @@ export const fetchallreceipts = async (req, res) => {
     searchcsname,
     showinactive,
   } = req.query;
-  const showInactive = showinactive === "true";
 
+  let role = req.user.role;
+  let isAdmin = req.user.is_admin;
+
+  const showInactive = showinactive === "true";
+  if (isAdmin) {
+    if (
+      (!role.includes("inith") && type == "hiring") ||
+      (!role.includes("inita") && type == "asset")
+    ) {
+      return res.status(200).json({ receipts_count: 0 });
+    }
+  }
   try {
     const count = await fetchallreceiptslogic(
       type,

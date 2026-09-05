@@ -46,3 +46,13 @@ export const formattedDate = (rawDate) => {
     : "";
   return formatted_date_flag;
 };
+
+export const initiatorRoles = [
+  "inita",
+  "initfn",
+  "inith",
+  "initpr",
+  "initdc",
+  "initlg",
+  "view",
+];

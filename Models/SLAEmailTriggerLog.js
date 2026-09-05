@@ -6,7 +6,7 @@ export const getStatementEmailTriggerSummary = async ({
 }) => {
   try {
     const { rows } = await pool.query(
-      `SELECT triggered_count,triggered_at
+      `SELECT triggered_count,triggered_at,role
        FROM statement_email_trigger_log
        WHERE document_id = $1 AND document_type = $2 AND email_sent = true`,
       [statement_id, statement_type],

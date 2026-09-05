@@ -4,6 +4,10 @@ export const fetchApprovalData = async (req, res) => {
   let updatedRoles = "";
   const roles = req.user.role;
   const isAdmin = req.user.is_admin;
+  const project_code = req.user.pr_code;
+  const department = req.user.dept_code;
+
+  const { pageSize, pageIndex, page, limit } = req.query;
 
   if (isAdmin) {
     const matchedAdminRoles = roles.filter((role) =>
@@ -13,9 +17,9 @@ export const fetchApprovalData = async (req, res) => {
       matchedAdminRoles.includes("initpr") &&
       matchedAdminRoles.includes("initdc")
     ) {
-      updatedRoles = ["initpr", "initdc"];
+      updatedRoles = ["initfn", "initpr", "initdc"];
     } else {
-      updatedRoles = matchedAdminRoles.filter((r) => r !== "initfn");
+      updatedRoles = matchedAdminRoles;
     }
   } else {
     updatedRoles = roles.filter((r) => r !== "initfn");
@@ -23,10 +27,13 @@ export const fetchApprovalData = async (req, res) => {
 
   try {
     const result = await approvalData({
-      dept: req.query.dept ?? req.query.department,
+      dept: department ?? [],
       role: updatedRoles,
       isAdmin: isAdmin,
+      pr_code: project_code,
       includeDeleted: req.query.includeDeleted === false,
+      page: pageIndex ?? page,
+      limit: pageSize ?? limit,
     });
 
     return res.status(200).json(result);
