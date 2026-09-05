@@ -1,3 +1,4 @@
+import { initiatorRoles } from "../helpers/helperfunctions.js";
 import {
   feedlogisticsStatement,
   fetchAllCsid,
@@ -105,7 +106,12 @@ export const fetchAllCs = async (req, res) => {
     showinactive,
   } = req.query;
   const showInactive = showinactive === "true";
-
+  if (
+    (initiatorRoles.some((r) => role.includes(r)) && role != "initlg") ||
+    role == "cm"
+  ) {
+    return res.status(200).json([]);
+  }
   try {
     const cs_id = await fetchAllCsidvalues(
       statusfilter,
@@ -132,6 +138,12 @@ export const fetchCscount = async (req, res) => {
     ["project[]"]: project,
     showinactive,
   } = req.query;
+  if (
+    (initiatorRoles.some((r) => role.includes(r)) && role != "initlg") ||
+    role == "cm"
+  ) {
+    return res.status(200).json({ receipts_count: 0 });
+  }
   const showInactive = showinactive === "true";
 
   try {
