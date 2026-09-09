@@ -133,14 +133,13 @@ export const approvalData = async ({
     const isHWA = roles.includes("initdc");
     const isInit = roles.every((r) => r.includes("initfn"));
     const isIncharge = roles.includes("incharge");
-    const isfn = roles.length === 1 && roles.includes("initfn");
     const queries = sourceQueries.map(async ([source, query, department]) => {
       const isAllowedForRole =
         (!isPm &&
           !isPd &&
           !isCm &&
           !isIncharge &&
-          !isfn &&
+          !isInit &&
           !isHire &&
           !isDemob &&
           !isHWA &&
@@ -150,7 +149,7 @@ export const approvalData = async ({
           ["receipts", "buy_rent_statements", "file_note"].includes(source)) ||
         (isAsset &&
           ["receipts", "buy_rent_statements", "file_note"].includes(source)) ||
-        (isfn && source === "file_note") ||
+        (isInit && source === "file_note") ||
         ((isPm || isPd) && ["log_statements", "file_note"].includes(source)) ||
         ((isCm || isDemob || isHWA) && source === "file_note");
       if (!isAllowedForRole) {
@@ -462,14 +461,17 @@ export const approvalData = async ({
         docNo = record.data.id;
         namefield = record.data.cargo_details;
         label = "Logistics CS";
+        type = "logistics";
       } else if (source == "file_note") {
         namefield = record.data.name;
         docNo = record.data.doc_no;
         category = record.data.category;
         if (record.data.type == "file_note") {
           label = "File Note";
+          type = "filenote";
         } else {
           label = "IOC";
+          type = "ioc";
         }
       } else if (source == "buy_rent_statements") {
         docNo = record.data.id;
