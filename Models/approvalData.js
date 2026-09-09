@@ -31,7 +31,6 @@ const asArray = (value) => {
     .filter(Boolean);
 };
 
-
 const matchesDepartment = (row, departments) => {
   if (departments.length === 0) return true;
   const department = String(row.source).toLowerCase();
@@ -132,7 +131,7 @@ export const approvalData = async ({
     const isAsset = roles.includes("inita");
     const isDemob = roles.includes("initpr");
     const isHWA = roles.includes("initdc");
-
+    const isInit = roles.every((r) => r.includes("initfn"));
     const isIncharge = roles.includes("incharge");
     const isfn = roles.length === 1 && roles.includes("initfn");
     const queries = sourceQueries.map(async ([source, query, department]) => {
@@ -147,7 +146,8 @@ export const approvalData = async ({
           !isHWA &&
           !isAsset) ||
         (isIncharge && source === "log_statements") ||
-        (isHire && ["receipts", "file_note"].includes(source)) ||
+        (isHire &&
+          ["receipts", "buy_rent_statements", "file_note"].includes(source)) ||
         (isAsset &&
           ["receipts", "buy_rent_statements", "file_note"].includes(source)) ||
         (isfn && source === "file_note") ||
@@ -163,11 +163,15 @@ export const approvalData = async ({
         conditions.push("project::text = ANY($1::text[])");
         params.push(projectCodes);
       } else if (
-        (isPm || isPd || isCm || isDemob || isHWA) &&
+        (isPm || isPd || isCm || isDemob || isHWA || isInit) &&
         source === "file_note"
       ) {
-        conditions.push("project_code::text = ANY($1::text[])");
-        params.push(projectCodes);
+        if (isInit) {
+          conditions.push("project_code IS NULL");
+        } else {
+          conditions.push("project_code::text = ANY($1::text[])");
+          params.push(projectCodes);
+        }
         if (isHWA && isDemob) {
           conditions.push("category IN ($2, $3)");
           params.push("FWA", "Demob");
@@ -287,7 +291,8 @@ export const approvalData = async ({
       }
       const pending_role = record?.data?.status?.toLowerCase().split(" ")[2];
 
-      if (!role.includes(pending_role)) {
+      const matched_pending_role = pending_role == "sfm" ? "fm" : pending_role;
+      if (!role.includes(matched_pending_role)) {
         return acc;
       }
 
