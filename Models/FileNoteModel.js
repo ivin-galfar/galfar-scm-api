@@ -1,6 +1,62 @@
 import pool from "../Config/db.js";
 import { statusExpected } from "../helpers/plantstatus.js";
 
+const formatWefDateForContent = (dateValue) => {
+  const dateOnlyMatch = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnlyMatch) {
+    return `${dateOnlyMatch[3]}-${dateOnlyMatch[2]}-${dateOnlyMatch[1]}`;
+  }
+
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new Error("Invalid W.E.F. changed date");
+  }
+
+  const dateParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Dubai",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).formatToParts(parsedDate);
+  const getPart = (type) => dateParts.find((part) => part.type === type)?.value;
+
+  return `${getPart("day")}-${getPart("month")}-${getPart("year")}`;
+};
+
+const updateWefDateInContent = (content, dateValue) => {
+  const parsedContent =
+    typeof content === "string" ? JSON.parse(content) : content;
+  const formattedDate = formatWefDateForContent(dateValue);
+
+  const updateNode = (node) => {
+    if (!node || typeof node !== "object") return node;
+
+    if (node.type === "paragraph" && Array.isArray(node.content)) {
+      const paragraphText = node.content
+        .filter((child) => child?.type === "text")
+        .map((child) => child.text || "")
+        .join("");
+      if (/^\s*w\.e\.f\b/i.test(paragraphText)) {
+        return {
+          ...node,
+          content: node.content.map((child) => {
+            const isWefDate =
+              child?.type === "text" &&
+              child.marks?.some((mark) => mark.type === "readOnlyText");
+
+            return isWefDate ? { ...child, text: formattedDate } : child;
+          }),
+        };
+      }
+    }
+
+    if (!Array.isArray(node.content)) return node;
+    return { ...node, content: node.content.map(updateNode) };
+  };
+
+  return updateNode(parsedContent);
+};
+
 export const insertFileNotes = async ({
   name,
   content,
@@ -11,11 +67,11 @@ export const insertFileNotes = async ({
   file_urls,
   project,
   sentforapproval,
+  wef,
 }) => {
   const projectValue = project === "" ? null : parseInt(project, 10);
   try {
-    const query =
-      "INSERT INTO file_note (department_id, name, content,sentforapproval,status,type,category,file,file_name,project_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *";
+    const query = `INSERT INTO file_note (department_id, name, content,sentforapproval,status,type,category,file,file_name,project_code,"w.e.f") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`;
     const values = [
       dept_id,
       name,
@@ -27,6 +83,7 @@ export const insertFileNotes = async ({
       file_urls,
       file_names,
       projectValue,
+      wef,
     ];
 
     const { rows } = await pool.query(query, values);
@@ -178,7 +235,7 @@ export const filenote = async (
     } else {
       query = count
         ? "SELECT COUNT(*) FROM file_note"
-        : "SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name,deleted,demob_intimated,intimated_by FROM file_note";
+        : `SELECT id,name,doc_no,project_code,type,category,status,department_id,approver_info,created_at,file_name,deleted,demob_intimated,intimated_by,"w.e.f_changed","w.e.f_changed_date" FROM file_note`;
     }
 
     // Add access control filter
@@ -373,12 +430,34 @@ export const updatefilenote = async (
   name,
   project_code,
   exportedstatement,
+  wefchanged,
+  wefchangeddate,
 ) => {
   const file = attachments?.map((a) => a.url);
   const file_name = attachments?.map((a) => a.name);
   const SPECIAL_PROJECTS = [7102, 7104, 7106];
   const SpecialProjects = SPECIAL_PROJECTS.includes(Number(project_code));
   try {
+    const shouldUpdateWef =
+      (wefchanged === true || wefchanged === "true") &&
+      wefchangeddate !== null &&
+      wefchangeddate !== undefined &&
+      wefchangeddate !== "";
+    let updatedContent = content;
+
+    if (shouldUpdateWef) {
+      if (updatedContent === undefined || updatedContent === null) {
+        const { rows } = await pool.query(
+          "SELECT content FROM file_note WHERE id = $1",
+          [fnid],
+        );
+        updatedContent = rows[0]?.content;
+      }
+
+      if (updatedContent) {
+        updatedContent = updateWefDateInContent(updatedContent, wefchangeddate);
+      }
+    }
     let query = "UPDATE file_note SET status = $1";
     let values = [status];
     let paramIndex = 2;
@@ -435,9 +514,9 @@ export const updatefilenote = async (
       values.push(sentforapproval);
       paramIndex++;
     }
-    if (content !== undefined) {
+    if (updatedContent !== undefined) {
       query += `, content = $${paramIndex}`;
-      values.push(content);
+      values.push(updatedContent);
       paramIndex++;
     }
     if (file !== undefined) {
@@ -456,6 +535,11 @@ export const updatefilenote = async (
       query += `, exported_statement = $${paramIndex}`;
       values.push(exportedstatement);
       paramIndex++;
+    }
+    if (shouldUpdateWef) {
+      query += `, "w.e.f_changed" = $${paramIndex}, "w.e.f_changed_date" = $${paramIndex + 1}`;
+      values.push(true, wefchangeddate);
+      paramIndex += 2;
     }
     query += ` WHERE id = $${paramIndex} RETURNING *`;
     values.push(fnid);
