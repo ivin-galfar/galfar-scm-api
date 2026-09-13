@@ -3,10 +3,11 @@ import { statusExpected } from "../helpers/plantstatus.js";
 
 const formatWefDateForContent = (dateValue) => {
   const dateOnlyMatch = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  //2026-09-12T09:36:31.796Z - the format we are getting
   if (dateOnlyMatch) {
     return `${dateOnlyMatch[3]}-${dateOnlyMatch[2]}-${dateOnlyMatch[1]}`;
   }
-
+  //mostly the remaing won't execute
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) {
     throw new Error("Invalid W.E.F. changed date");
