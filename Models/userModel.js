@@ -8,13 +8,13 @@ export const addUser = async (
   role,
   deptcode,
   pr_code,
-  createdAt,
+  is_valid,
 ) => {
   const hashedPassword = await Hashpassword(password);
 
   try {
     let query =
-      "INSERT INTO users (email,password,is_admin,role,dept_code,pr_code,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *";
+      "INSERT INTO users (email,password,is_admin,role,dept_code,pr_code,is_valid) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *";
     let params = [
       email,
       hashedPassword,
@@ -22,7 +22,7 @@ export const addUser = async (
       role,
       deptcode,
       pr_code,
-      createdAt,
+      is_valid,
     ];
 
     const { rows } = await pool.query(query, params);

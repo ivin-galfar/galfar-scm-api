@@ -37,14 +37,13 @@ const updateWefDateInContent = (content, dateValue) => {
         .filter((child) => child?.type === "text")
         .map((child) => child.text || "")
         .join("");
-      if (/^\s*w\.e\.f\b/i.test(paragraphText)) {
+      if (/w\.e\.f/i.test(paragraphText)) {
         return {
           ...node,
           content: node.content.map((child) => {
             const isWefDate =
               child?.type === "text" &&
               child.marks?.some((mark) => mark.type === "readOnlyText");
-
             return isWefDate ? { ...child, text: formattedDate } : child;
           }),
         };
