@@ -21,6 +21,7 @@ export const AddFileNotes = async (req, res) => {
     file_urls,
     project,
     sentforapproval,
+    wef,
   } = req.body;
 
   try {
@@ -34,6 +35,7 @@ export const AddFileNotes = async (req, res) => {
       file_urls,
       project,
       sentforapproval,
+      wef,
     });
     return res.status(200).json(filenote);
   } catch (error) {
@@ -134,6 +136,8 @@ export const updatefnvalue = async (req, res) => {
     name,
     project_code,
     exportedstatement,
+    wefchanged,
+    wefchangeddate,
   } = req.body;
   try {
     const fnidvalue = await updatefilenote(
@@ -150,6 +154,8 @@ export const updatefnvalue = async (req, res) => {
       name,
       project_code,
       exportedstatement,
+      wefchanged,
+      wefchangeddate,
     );
 
     return res.status(200).json(fnidvalue);

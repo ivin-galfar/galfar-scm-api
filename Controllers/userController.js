@@ -8,7 +8,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import generateToken from "../Utils/generateToken.js";
 export const createUser = async (req, res) => {
-  const { email, password, isAdmin, role, deptcode, pr_code } = req.body;
+  const { email, password, isAdmin, role, deptcode, pr_code, is_valid } =
+    req.body;
 
   const hasAccount = await existing(email);
   if (hasAccount.length > 0) {
@@ -24,7 +25,7 @@ export const createUser = async (req, res) => {
       role,
       deptcode,
       pr_code,
-      createdAt,
+      is_valid,
     );
     res.json(user);
   } catch (er) {
@@ -99,5 +100,3 @@ export const verifyUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-
