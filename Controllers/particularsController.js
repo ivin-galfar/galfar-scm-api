@@ -5,6 +5,7 @@ import {
   feedParticular,
   fetchAllParticulars,
   fetchParticularTemplate,
+  updateParticulars,
 } from "../Models/particularsModel.js";
 
 export const feedParticulars = async (req, res) => {
@@ -30,7 +31,7 @@ export const feedParticulars = async (req, res) => {
       template.name,
       particulars,
       created_at,
-      dept_code
+      dept_code,
     );
     return res.status(201).json({
       message: "Template created successfully",
@@ -38,6 +39,23 @@ export const feedParticulars = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateParticularsValue = async (req, res) => {
+  const { id } = req.params;
+  const particulars = req.body.template?.particulars;
+  const templatename = req.body.template?.name;
+
+  try {
+    const updatetemplate = await updateParticulars(
+      particulars,
+      templatename,
+      id,
+    );
+    return res.status(200).json({ updatetemplate });
+  } catch (error) {
+    res.status(500).json(error);
   }
 };
 
