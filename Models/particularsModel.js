@@ -31,7 +31,8 @@ export const existingParticularsByName = async (template) => {
 };
 
 export const fetchAllParticulars = async (dept_code) => {
-  let query = "SELECT * FROM particulars where dept_code = $1 order by id desc";
+  let query =
+    "SELECT * FROM particulars where dept_code = $1 AND deleted=0 order by id desc";
   let params = [dept_code];
 
   const { rows } = await pool.query(query, params);
@@ -55,7 +56,7 @@ export const fetchParticularTemplate = async (id) => {
 
 export const deleteParticular = async (id) => {
   const { rows } = await pool.query(
-    "DELETE FROM public.particulars where id =$1",
+    "UPDATE particulars SET  deleted = 1 where id =$1",
     [id],
   );
   return rows;
