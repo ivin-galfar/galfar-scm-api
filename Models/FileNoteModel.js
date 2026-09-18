@@ -38,13 +38,53 @@ const updateWefDateInContent = (content, dateValue) => {
         .map((child) => child.text || "")
         .join("");
       if (/w\.e\.f/i.test(paragraphText)) {
+        const datePattern =
+          /(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})/;
         return {
           ...node,
-          content: node.content.map((child) => {
-            const isWefDate =
-              child?.type === "text" &&
-              child.marks?.some((mark) => mark.type === "readOnlyText");
-            return isWefDate ? { ...child, text: formattedDate } : child;
+          content: node.content.flatMap((child) => {
+            if (child?.type !== "text") {
+              return child;
+            }
+
+            const match = child.text?.match(datePattern);
+
+            if (!match) {
+              return child;
+            }
+
+            const beforeDate = child.text.slice(0, match.index);
+
+            const afterDate = child.text.slice(match.index + match[0].length);
+
+            return [
+              ...(beforeDate
+                ? [
+                    {
+                      ...child,
+                      text: beforeDate,
+                    },
+                  ]
+                : []),
+
+              {
+                ...child,
+                text: formattedDate,
+                marks: [
+                  ...(child.marks || []).filter((mark) => mark.type !== "bold"),
+                  { type: "bold" },
+                ],
+              },
+
+              ...(afterDate
+                ? [
+                    {
+                      ...child,
+                      text: afterDate,
+                    },
+                  ]
+                : []),
+            ];
           }),
         };
       }
@@ -71,11 +111,18 @@ export const insertFileNotes = async ({
 }) => {
   const projectValue = project === "" ? null : parseInt(project, 10);
   try {
+    const normalizedContent =
+      wef && content ? updateWefDateInContent(content, wef) : content;
+    const originalContent =
+      typeof content === "string" ? JSON.parse(content) : content;
+    const contentWefUpdated =
+      Boolean(wef && content) &&
+      JSON.stringify(originalContent) !== JSON.stringify(normalizedContent);
     const query = `INSERT INTO file_note (department_id, name, content,sentforapproval,status,type,category,file,file_name,project_code,"w.e.f") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`;
     const values = [
       dept_id,
       name,
-      content,
+      normalizedContent,
       sentforapproval,
       "created",
       type,
@@ -87,7 +134,14 @@ export const insertFileNotes = async ({
     ];
 
     const { rows } = await pool.query(query, values);
-    return rows[0];
+
+    return {
+      ...rows[0],
+      contentWefUpdated,
+      ...(contentWefUpdated && {
+        message: `Fleet off-hire date updated to the selected date (${formatWefDateForContent(wef)}).`,
+      }),
+    };
   } catch (error) {
     console.error("Error:", error);
     throw error;
