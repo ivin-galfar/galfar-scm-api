@@ -53,6 +53,16 @@ const updateWefDateInContent = (content, dateValue) => {
               return child;
             }
 
+            const isBold = child.marks?.some((mark) => mark?.type === "bold");
+            const isReadonly = child.marks?.some(
+              (mark) => mark?.type === "readOnlyText",
+            );
+
+            //if user not trying to change the date manually
+            if (match[0] === formattedDate && isBold && isReadonly) {
+              return child;
+            }
+
             const beforeDate = child.text.slice(0, match.index);
 
             const afterDate = child.text.slice(match.index + match[0].length);
