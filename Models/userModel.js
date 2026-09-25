@@ -1,5 +1,6 @@
 import pool from "../Config/db.js";
 import { Hashpassword } from "../Utils/Hashpassword.js";
+import { buildSafeUserInfo } from "../Utils/userPermissions.js";
 
 export const addUser = async (
   email,
@@ -70,13 +71,29 @@ export const getUserByResetToken = async (hashedToken) => {
 };
 
 export const getuserById = async (userId) => {
-  const { rows } = await pool.query(
-    `SELECT *
-   FROM users
-   WHERE id = $1`,
-    [userId],
-  );
-  return rows[0];
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        to_jsonb(u) - ARRAY['password', 'reset_token', 'reset_token_expires', 'password_reset_token', 'password_reset_expires']::text[] AS account,
+        COALESCE((
+          SELECT jsonb_agg(jsonb_build_object(
+            'statement_role', srp.statement_role,
+            'allowed_role', srp.allowed_role,
+            'access_level', srp.access_level
+          ) ORDER BY srp.statement_role, srp.allowed_role, srp.access_level)
+          FROM statement_role_permissions srp
+          WHERE srp.allowed_role = ANY(COALESCE(u.role, ARRAY[]::text[]))
+        ), '[]'::jsonb) AS matching_permissions
+      FROM users u WHERE u.id = $1`,
+      [userId],
+    );
+    if (!rows[0]) return null;
+    return buildSafeUserInfo(rows[0].account, rows[0].matching_permissions);
+  } catch (error) {
+    console.log(error);
+
+    throw error;
+  }
 };
 
 export const updatePassword = async (userId, newPassword) => {
