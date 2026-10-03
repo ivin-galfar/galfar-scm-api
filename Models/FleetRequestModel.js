@@ -26,7 +26,7 @@ export const InsertFleetRequest = async ({
 
     const fleetRequestResult = await client.query(
       `
-        INSERT INTO fleet_request (project, created_date, location,status)
+        INSERT INTO fleet_request (project, created_at, location,status)
         VALUES ($1, $2, $3,$4)
         RETURNING *
       `,
@@ -42,7 +42,7 @@ export const InsertFleetRequest = async ({
           INSERT INTO fleet_request_items (
             fleet_request_id,
             item_no,
-            equipment_description,
+            fleet_description,
             capacity,
             cicpa,
             quantity,
@@ -53,18 +53,20 @@ export const InsertFleetRequest = async ({
             production_qty_envisaged,
             qty_similar_machines_available,
             utilization,
+            adnoc_fitments,
+            tpi,
             remarks
           )
           VALUES (
             $1, $2, $3, $4, $5, $6, $7,
-            $8, $9, $10, $11, $12, $13,$14
+            $8, $9, $10, $11, $12, $13, $14, $15, $16
           )
           RETURNING *
         `,
         [
           fleetRequest.id,
           index + 1,
-          item.equip_desc,
+          item.fleet_description,
           item.capacity,
           item.cicpa,
           item.quantity,
@@ -75,6 +77,8 @@ export const InsertFleetRequest = async ({
           item.production_qty_envisaged,
           item.qty_similar_machines,
           item.utilization,
+          item.adnoc_fitments,
+          item.tpi,
           item.remarks,
         ],
       );
@@ -106,6 +110,7 @@ export const UpdateFleetRequest = async (
     comments,
     items,
     expectedStatus,
+    deleted,
   },
 ) => {
   const client = await pool.connect();
@@ -121,11 +126,12 @@ export const UpdateFleetRequest = async (
     };
 
     addValue("project", project);
-    addValue("created_date", date);
+    addValue("created_at", date);
     addValue("location", location);
 
     addValue("status", status);
     addValue("sentforapproval", sentforapproval);
+    addValue("deleted", deleted);
 
     let approvalData = approver_info;
     if (
@@ -180,6 +186,7 @@ export const UpdateFleetRequest = async (
   `;
 
     const { rows } = await client.query(query, values);
+
     if (rows.length === 0) {
       const error = new Error(
         "Fleet Request changed before this action completed. Refresh and try again.",
@@ -203,24 +210,27 @@ export const UpdateFleetRequest = async (
       for (const [index, item] of items.entries()) {
         const itemResult = await client.query(
           `INSERT INTO fleet_request_items (
-            fleet_request_id, item_no, equipment_description, capacity, cicpa,
+            fleet_request_id, item_no, fleet_description, capacity, cicpa,
             quantity, required_from, rental_type, duration, purpose,
-            production_qty_envisaged, qty_similar_machines_available, utilization, remarks
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+            production_qty_envisaged, qty_similar_machines_available, utilization,
+            adnoc_fitments, tpi, remarks
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
           [
             id,
             index + 1,
-            item.equip_desc ?? item.equipmentDescription,
+            item.fleetDescription,
             item.capacity,
             item.cicpa,
             item.quantity,
-            item.required_from ?? item.requiredFrom,
-            item.rental_type ?? item.rentalType,
+            item.requiredFrom,
+            item.rentalType,
             item.duration,
             item.purpose,
-            item.production_qty_envisaged ?? item.productionQtyEnvisaged,
-            item.qty_similar_machines ?? item.similarMachinesAvailable,
+            item.productionQtyEnvisaged,
+            item.similarMachinesAvailable,
             item.utilization,
+            item.adnocFitments,
+            item.tpi,
             item.remarks,
           ],
         );
@@ -240,22 +250,48 @@ export const UpdateFleetRequest = async (
 };
 
 //minimal data for dashboards data
-export const FetchFleetRequest = async (project, module, canEdit = false) => {
+export const FetchFleetRequest = async (
+  project,
+  module,
+  canEdit = false,
+  page = 0,
+  limit = 10,
+  statusfilter = "All",
+  userRoles = [],
+  canViewAllPending = false,
+) => {
   const fieldsByModule = {
-    equipfr: "id,doc_id",
-    frdashboard: "id,doc_id, created_date, project, status",
+    fleetrequest: "id,doc_id,project",
+    frdashboard:
+      "id,doc_id,location, created_at, project, status, approver_info",
   };
 
   const fields = fieldsByModule[module];
 
   if (!fields) {
-    const error = new Error("Invalid module. Use fr or frdashboard");
+    const error = new Error("Invalid module. Use fleetrequest or frdashboard");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedPage = Number(page);
+  const normalizedLimit = Number(limit);
+  if (
+    module === "frdashboard" &&
+    (!Number.isInteger(normalizedPage) ||
+      normalizedPage < 0 ||
+      !Number.isInteger(normalizedLimit) ||
+      normalizedLimit < 1)
+  ) {
+    const error = new Error(
+      "page must be a non-negative integer and limit must be a positive integer",
+    );
     error.statusCode = 400;
     throw error;
   }
 
   const values = [];
-  let whereConditions = [];
+  const whereConditions = ["deleted = 0"];
 
   let query = `
     SELECT ${fields}
@@ -264,7 +300,7 @@ export const FetchFleetRequest = async (project, module, canEdit = false) => {
 
   if (!canEdit) {
     whereConditions.push(
-      `status IS NOT NULL AND LOWER(TRIM(status)) NOT IN ('created', 'review')`,
+      `status IS NOT NULL AND LOWER(TRIM(status)) NOT IN ('created', 'review', 'recalled')`,
     );
   }
 
@@ -289,14 +325,62 @@ export const FetchFleetRequest = async (project, module, canEdit = false) => {
     values.push(projects);
   }
 
+  const normalizedStatusFilter = String(statusfilter ?? "All")
+    .trim()
+    .toLowerCase();
+
+  if (
+    module === "frdashboard" &&
+    normalizedStatusFilter &&
+    normalizedStatusFilter !== "all"
+  ) {
+    if (normalizedStatusFilter === "pending") {
+      if (canViewAllPending) {
+        whereConditions.push(`LOWER(TRIM(status)) LIKE $${values.length + 1}`);
+        values.push("pending for %");
+      } else {
+        const pendingStatuses = userRoles.map(
+          (role) => `pending for ${String(role).trim().toLowerCase()}`,
+        );
+        whereConditions.push(
+          `LOWER(TRIM(status)) = ANY($${values.length + 1}::text[])`,
+        );
+        values.push(pendingStatuses);
+      }
+    } else {
+      whereConditions.push(`LOWER(TRIM(status)) = $${values.length + 1}`);
+      values.push(normalizedStatusFilter);
+    }
+  }
+
   if (whereConditions.length > 0) {
     query += " WHERE " + whereConditions.join(" AND ");
   }
-  query += " ORDER BY created_date DESC";
 
-  const { rows } = await pool.query(query, values);
+  // Count the same filtered result set as the dashboard query, excluding only
+  // its pagination parameters.
+  const countValues = [...values];
+  const countQuery = `
+    SELECT COUNT(*)::int AS total_count
+    FROM fleet_request
+    WHERE ${whereConditions.join(" AND ")}
+  `;
 
-  return rows;
+  query += " ORDER BY created_at DESC";
+
+  if (module === "frdashboard") {
+    query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+    values.push(normalizedLimit, normalizedPage * normalizedLimit);
+  }
+
+  const [dataResult, countResult] = await Promise.all([
+    pool.query(query, values),
+    pool.query(countQuery, countValues),
+  ]);
+  return {
+    data: dataResult.rows,
+    totalCount: countResult.rows[0].total_count,
+  };
 };
 
 export const FetchFleetRequestVal = async (id) => {

@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 import { getEmailsByRole } from "../Models/userModel.js";
-import { emaillogs } from "../Models/emailModel.js";
 import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
 import { mergedPdf } from "../helpers/helperfunctions.js";
 

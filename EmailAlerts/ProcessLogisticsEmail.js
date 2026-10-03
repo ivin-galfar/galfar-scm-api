@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
-import { sentemail } from "../Models/logisticsModel.js";
 import { PmCmNames } from "../Models/projectModel.js";
 import { emaillogslg } from "../Models/emailModel.js";
 

@@ -82,10 +82,50 @@ test("initiator rules and invalid or repeated transitions are rejected", () => {
   const access = getStatementAccess(actor, "fl_req");
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "created" }, user: actor, access, action: "update" }).nextStatus, "created");
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "review" }, user: actor, access, action: "send-for-approval" }).nextStatus, "pending for cm");
+  assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "recalled" }, user: actor, access, action: "update" }).nextStatus, "recalled");
+  assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "recalled" }, user: actor, access, action: "send-for-approval" }).nextStatus, "pending for cm");
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "pending for pm" }, user: actor, access, action: "update" }).statusCode, 409);
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "created" }, user: actor, access, action: "update", project: 7104 }).statusCode, 409);
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "approved" }, user: actor, access, action: "approve" }).statusCode, 403);
   assert.equal(authorizeFleetRequestAction({ request: { project: 7097, status: "created" }, user: actor, access, action: "invalid" }).statusCode, 400);
+});
+
+test("initiators can recall pending requests but not completed or editable requests", () => {
+  const actor = user("initfr", "edit");
+  const access = getStatementAccess(actor, "fl_req");
+
+  assert.deepEqual(
+    authorizeFleetRequestAction({
+      request: { project: 7097, status: "pending for pm" },
+      user: actor,
+      access,
+      action: "recall",
+    }),
+    { actorRole: "initiator", nextStatus: "recalled" },
+  );
+
+  for (const status of ["created", "recalled", "review", "rejected", "approved"]) {
+    assert.equal(
+      authorizeFleetRequestAction({
+        request: { project: 7097, status },
+        user: actor,
+        access,
+        action: "recall",
+      }).statusCode,
+      409,
+    );
+  }
+
+  const approver = user("pm", "view");
+  assert.equal(
+    authorizeFleetRequestAction({
+      request: { project: 7097, status: "pending for pm" },
+      user: approver,
+      access: getStatementAccess(approver, "fl_req"),
+      action: "recall",
+    }).statusCode,
+    403,
+  );
 });
 
 test("wrong step, access, comments, and project boundaries are enforced", () => {

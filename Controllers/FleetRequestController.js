@@ -10,6 +10,7 @@ import {
   canAccessFleetProject,
   getUserRoles,
 } from "../Utils/fleetRequestAuthorization.js";
+import { hasInvalidFitmentSelection } from "../Utils/fleetRequestValidateItems.js";
 
 export const RequireFleetRequestInitiator = (req, res, next) => {
   if (!req.statementAccess?.canEdit) {
@@ -38,10 +39,12 @@ export const AddFleetRequest = async (req, res) => {
     fleetRequestItems.length === 0 ||
     fleetRequestItems.some(
       (item) => !item || typeof item !== "object" || Array.isArray(item),
-    )
+    ) ||
+    hasInvalidFitmentSelection(fleetRequestItems)
   ) {
     return res.status(400).json({
-      error: "project, date, location and a non-empty items array are required",
+      error:
+        "project, date, location, a non-empty items array, a Yes/No ADNOC Fitments selection, and a Normal/CPIS TPI selection are required",
     });
   }
   if (!canAccessFleetProject(req.user, project)) return denyProject(res);
@@ -68,11 +71,23 @@ export const AddFleetRequest = async (req, res) => {
 export const UpdateFleetRequestDetails = async (req, res) => {
   const { id } = req.params;
 
-  const { project, date, location, content, status, comments, action, items } =
+  const { project, date, location, comments, action, items, deleted } =
     req.body;
 
   if (!id) {
     return res.status(400).json({ error: "Fleet request id is required" });
+  }
+
+  if (
+    items !== undefined &&
+    (!Array.isArray(items) ||
+      items.length === 0 ||
+      hasInvalidFitmentSelection(items))
+  ) {
+    return res.status(400).json({
+      error:
+        "items must be a non-empty array with a Yes/No ADNOC Fitments selection and a Normal/CPIS TPI selection",
+    });
   }
 
   try {
@@ -105,11 +120,16 @@ export const UpdateFleetRequestDetails = async (req, res) => {
       location,
       status: authorization.nextStatus,
       sentforapproval:
-        normalizedAction === "send-for-approval" ? true : undefined,
+        normalizedAction === "send-for-approval"
+          ? true
+          : normalizedAction === "recall"
+            ? false
+            : undefined,
       role: authorization.actorRole,
       comments,
       items,
       expectedStatus: existingRequest.status,
+      deleted,
     });
 
     if (!fleetRequest) {
@@ -127,24 +147,26 @@ export const UpdateFleetRequestDetails = async (req, res) => {
 };
 
 export const FleetRequest = async (req, res) => {
-  const { module } = req.query;
-  const { project } = req.params;
+  const { module, page, limit, statusfilter, projects } = req.query;
+
   const canEdit = req.statementAccess?.canEdit === true;
 
   const userRoles = getUserRoles(req.user);
+  const isAdmin = req.user?.is_admin === true;
+  const canViewAllPending = isAdmin && canEdit;
   const canViewAllProjects = ["hod", "gm", "ceo"].some((role) =>
     userRoles.includes(role),
   );
 
-  if (!module || (!project && !canViewAllProjects)) {
+  if (!module || (!projects && !canViewAllProjects)) {
     return res.status(400).json({
       error: canViewAllProjects
         ? "module query parameter is required"
         : "project and module parameters are required",
     });
   }
-  if (project && !canViewAllProjects) {
-    const requestedProjects = String(project)
+  if (projects && !canViewAllProjects) {
+    const requestedProjects = String(projects)
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
@@ -158,9 +180,14 @@ export const FleetRequest = async (req, res) => {
   }
   try {
     const fleetrequests = await FetchFleetRequest(
-      canViewAllProjects ? undefined : project,
+      canViewAllProjects ? undefined : projects,
       module,
       canEdit,
+      page,
+      limit,
+      statusfilter,
+      userRoles,
+      canViewAllPending,
     );
     return res.status(200).json(fleetrequests);
   } catch (error) {
@@ -186,7 +213,7 @@ export const fetchFleetRequestById = async (req, res) => {
       .toLowerCase();
     if (
       !req.statementAccess?.canEdit &&
-      ["created", "review"].includes(status)
+      ["created", "review", "recalled"].includes(status)
     ) {
       return res.status(403).json({
         error:
