@@ -70,7 +70,7 @@ export const fetchfnids = async (req, res) => {
 
   if (isadmin) {
     const matchedAdminRoles = roles.filter((role) =>
-      ["initpr", "initdc", "inith", "inita", "initfn"].includes(role),
+      ["initpr", "initdc", "inith", "inita", "initfn", "initfr"].includes(role),
     );
     if (
       matchedAdminRoles.includes("initpr") &&

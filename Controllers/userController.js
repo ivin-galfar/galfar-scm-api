@@ -1,6 +1,7 @@
 import {
   addUser,
   existing,
+  getuserById,
   updateDocRead,
   updatePasswordResetToken,
 } from "../Models/userModel.js";
@@ -47,9 +48,11 @@ export const authUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json("Invalid Credentials!");
     }
+
+    const userWithPermissions = await getuserById(user.id);
     const token = generateToken(user.id);
     res.json({
-      ...user,
+      ...userWithPermissions,
       token,
     });
   } catch (er) {

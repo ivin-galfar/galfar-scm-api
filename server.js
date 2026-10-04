@@ -13,6 +13,7 @@ import BRRoutes from "./Routes/BuyRentRoutes.js";
 import FNRoutes from "./Routes/FileNoteRoutes.js";
 import ApprovalDataRoutes from "./Routes/ApprovalDataRoutes.js";
 import GeneralRoutes from "./Routes/GeneralRoutes.js";
+import FleetRequestRoutes from "./Routes/FleetRequestRoutes.js";
 // import SharePointRoutes from "./Routes/sharepointRoutes.js";
 import verifyToken from "./Utils/jwtTokenValidation.js";
 import { cronemails } from "./cron/emailCron.js";
@@ -50,6 +51,7 @@ app.use("/brstatement", verifyToken, BRRoutes);
 app.use("/filenote", verifyToken, FNRoutes);
 app.use("/projects", verifyToken, ProjectRoutes);
 app.use("/analytics", verifyToken, ApprovalDataRoutes);
+app.use("/flreq", verifyToken, FleetRequestRoutes);
 app.use("/announcements", verifyToken, GeneralRoutes);
 
 // app.use("/sharepoint", SharePointRoutes);

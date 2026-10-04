@@ -9,7 +9,6 @@ import {
   getApproverDetailsByCSId,
   removeStatement,
   revertrequest,
-  totalReceipts,
   updateDeleteFlag,
   updatereceipt,
   updateReceiptStatus,
