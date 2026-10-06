@@ -402,8 +402,10 @@ export const filenote = async (
           values.push(project_code);
         }
       } else if (fileNoteRoles.includes("initfn")) {
-        whereConditions.push(`category NOT IN ($${values.length + 1})`);
-        values.push("FWA");
+        whereConditions.push(
+          `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
+        );
+        values.push("FWA", "Demob");
       } else if (
         !fileNoteRoles.includes("gm") &&
         !fileNoteRoles.includes("ceo") &&
@@ -451,6 +453,8 @@ export const filenote = async (
     if (whereConditions.length > 0) {
       query += " WHERE " + whereConditions.join(" AND ");
     }
+    console.log(query);
+    console.log(values);
 
     // Add sorting
     if (!count && module !== "/") {

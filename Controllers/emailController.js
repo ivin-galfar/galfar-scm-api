@@ -1,9 +1,6 @@
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import {
-  getUserByResetToken,
-  updatePassword,
-} from "../Models/userModel.js";
+import { getUserByResetToken, updatePassword } from "../Models/userModel.js";
 import { ProcessLogisticsEmail } from "../EmailAlerts/ProcessLogisticsEmail.js";
 import { ProcessBvrEmail } from "../EmailAlerts/ProcessBvrEmail.js";
 import { ProcessHireEmail } from "../EmailAlerts/ProcessHireEmail.js";
@@ -23,6 +20,7 @@ export const EmailNotify = async (req, res) => {
       comments,
       created_at,
       approvedPdfUrl,
+      approvedpdfName,
       file,
       filename,
     } = req.body;
@@ -41,6 +39,7 @@ export const EmailNotify = async (req, res) => {
         comments,
         created_at,
         approvedPdfUrl,
+        approvedpdfName,
         file,
         filename,
         role,
