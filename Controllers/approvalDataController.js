@@ -1,3 +1,4 @@
+import { initiatorRoles } from "../helpers/helperfunctions.js";
 import { approvalData } from "../Models/approvalData.js";
 
 export const fetchApprovalData = async (req, res) => {
@@ -11,7 +12,7 @@ export const fetchApprovalData = async (req, res) => {
 
   if (isAdmin) {
     const matchedAdminRoles = roles.filter((role) =>
-      ["initpr", "initdc", "inith", "inita", "initfn", "initlg"].includes(role),
+      initiatorRoles.includes(role),
     );
     if (
       matchedAdminRoles.includes("initpr") &&

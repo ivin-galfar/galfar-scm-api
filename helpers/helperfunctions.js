@@ -54,5 +54,6 @@ export const initiatorRoles = [
   "initpr",
   "initdc",
   "initlg",
+  "initfr",
   "view",
 ];

@@ -9,7 +9,6 @@ import {
   getApproverDetailsByCSId,
   removeStatement,
   revertrequest,
-  totalReceipts,
   updateDeleteFlag,
   updatereceipt,
   updateReceiptStatus,
@@ -397,7 +396,7 @@ export const uploadFile = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       uploadedFiles,
     });
   } catch (error) {

@@ -22,6 +22,7 @@ const sourceQueries = [
   ["log_statements", "SELECT * FROM log_statements", "logistics"],
   ["file_note", "SELECT * FROM file_note", "plant"],
   ["buy_rent_statements", "SELECT * FROM buy_rent_statements", "plant"],
+  ["fleet_request", "SELECT * FROM fleet_request", "plant"],
 ];
 
 const asArray = (value) => {
@@ -35,7 +36,7 @@ const matchesDepartment = (row, departments) => {
   if (departments.length === 0) return true;
   const department = String(row.source).toLowerCase();
   const departmentMap = {
-    1: ["receipts", "file_note", "buy_rent_statements"],
+    1: ["receipts", "file_note", "buy_rent_statements", "fleet_request"],
     2: ["log_statements"],
   };
 
@@ -132,6 +133,7 @@ export const approvalData = async ({
     const isDemob = roles.includes("initpr");
     const isHWA = roles.includes("initdc");
     const isInit = roles.every((r) => r.includes("initfn"));
+    const isInitfleet = roles.every((r) => r.includes("initfr"));
     const isIncharge = roles.includes("incharge");
     const queries = sourceQueries.map(async ([source, query, department]) => {
       const isAllowedForRole =
@@ -143,6 +145,7 @@ export const approvalData = async ({
           !isHire &&
           !isDemob &&
           !isHWA &&
+          !isInitfleet &&
           !isAsset) ||
         (isIncharge && source === "log_statements") ||
         (isHire &&
@@ -150,15 +153,18 @@ export const approvalData = async ({
         (isAsset &&
           ["receipts", "buy_rent_statements", "file_note"].includes(source)) ||
         (isInit && source === "file_note") ||
-        ((isPm || isPd) && ["log_statements", "file_note"].includes(source)) ||
-        ((isCm || isDemob || isHWA) && source === "file_note");
+        ((isPm || isPd) &&
+          ["log_statements", "file_note", "fleet_request"].includes(source)) ||
+        ((isDemob || isHWA) && source === "file_note") ||
+        (isCm && ["file_note", "fleet_request"].includes(source)) ||
+        (isInitfleet && source === "fleet_request");
       if (!isAllowedForRole) {
         return [];
       }
       const params = [];
       const conditions = [];
       if (!includeDeleted) conditions.push("deleted = 0");
-      if (isPm && source === "log_statements") {
+      if (isPm && (source === "log_statements" || source === "fleet_request")) {
         conditions.push("project::text = ANY($1::text[])");
         params.push(projectCodes);
       } else if (
@@ -181,6 +187,12 @@ export const approvalData = async ({
           conditions.push("category = $2");
           params.push("Demob");
         }
+      } else if (
+        (isPm || isPd || isCm || isInitfleet) &&
+        source === "fleet_request"
+      ) {
+        conditions.push("project::text = ANY($1::text[])");
+        params.push(projectCodes);
       }
 
       const filteredQuery = conditions.length
@@ -203,11 +215,13 @@ export const approvalData = async ({
     });
 
     const sourceRows = await Promise.all(queries);
+
     const filteredRows = sourceRows.map((records) =>
       records.filter((record) => record),
     );
 
     const allRecords = filteredRows.flat();
+
     const data = sourceRows.reduce((result, records, index) => {
       const [source, , department] = sourceQueries[index];
 
@@ -336,6 +350,10 @@ export const approvalData = async ({
       } else if (source === "buy_rent_statements") {
         name = record.data.item;
         label = "Buy Vs Rent";
+        due_period = dueHours;
+      } else if (source === "fleet_request") {
+        name = record.data.doc_id;
+        label = "Fleet Request";
         due_period = dueHours;
       }
       acc[source].push({
@@ -478,6 +496,11 @@ export const approvalData = async ({
         namefield = record.data.item;
         label = "Buy Vs Rent";
         type = "buyvsrent";
+      } else if (source === "fleet_request") {
+        docNo = record.data.doc_id;
+        namefield = "Fleet Request - " + record.data.project;
+        label = "Fleet Request";
+        type = "fleet request";
       }
       acc[source].push({
         id: record.data.id,

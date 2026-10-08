@@ -1,23 +1,11 @@
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
-import {
-  getEmailsByProject,
-  getEmailsByRole,
-  getMultipleEmailsByRole,
-  getUserByResetToken,
-  updatePassword,
-} from "../Models/userModel.js";
-import { emaillogs, emaillogsfn } from "../Models/emailModel.js";
-import pmMap from "../Utils/pmmapping.js";
-import { sentemail } from "../Models/logisticsModel.js";
-import { PmCmNames } from "../Models/projectModel.js";
-import { PDFDocument } from "pdf-lib";
-import { mergedPdf } from "../helpers/helperfunctions.js";
+import { getUserByResetToken, updatePassword } from "../Models/userModel.js";
 import { ProcessLogisticsEmail } from "../EmailAlerts/ProcessLogisticsEmail.js";
 import { ProcessBvrEmail } from "../EmailAlerts/ProcessBvrEmail.js";
 import { ProcessHireEmail } from "../EmailAlerts/ProcessHireEmail.js";
 import { ProcessFnEmail } from "../EmailAlerts/ProcessFnEmail.js";
+import { ProcessFREmail } from "../EmailAlerts/ProcessFREmail.js";
 
 export const EmailNotify = async (req, res) => {
   const { dept = "", type = "", category = "" } = req.query || {};
@@ -32,6 +20,7 @@ export const EmailNotify = async (req, res) => {
       comments,
       created_at,
       approvedPdfUrl,
+      approvedpdfName,
       file,
       filename,
     } = req.body;
@@ -50,6 +39,7 @@ export const EmailNotify = async (req, res) => {
         comments,
         created_at,
         approvedPdfUrl,
+        approvedpdfName,
         file,
         filename,
         role,
@@ -122,7 +112,7 @@ export const EmailNotify = async (req, res) => {
         message: error.message,
       });
     }
-  } else if (dept == "plant" && type != "" && category != "") {
+  } else if (dept == "plant" && type !== "fr" && type != "" && category != "") {
     const {
       id,
       dept_id,
@@ -158,6 +148,41 @@ export const EmailNotify = async (req, res) => {
       return res.status(200).json(result);
     } catch (error) {
       return res.status(500).json({
+        message: error.message,
+      });
+    }
+  } else if (dept == "plant" && type === "fr") {
+    const {
+      id,
+      role,
+      dept_id,
+      project,
+      doc_id,
+      created_at,
+      location,
+      status,
+      exportedStatementAttachment,
+    } = req.body;
+
+    try {
+      const result = await ProcessFREmail({
+        id,
+        role,
+        dept_id,
+        project,
+        doc_id,
+        created_at,
+        location,
+        status,
+        exportedStatementAttachment,
+      });
+      return res.status(200).json({
+        success: true,
+        data: { id, result },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
         message: error.message,
       });
     }

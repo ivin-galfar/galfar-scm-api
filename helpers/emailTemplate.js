@@ -21,14 +21,17 @@ export const NewsletterTemplate = async ({
         pass: process.env.EMAIL_PASSWORD,
       },
     });
-    const currentMonth = new Date().toLocaleString("en-US", {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+
+    const lastMonth = date.toLocaleString("en-US", {
       month: "long",
       year: "numeric",
     });
     const mailOptions = {
       from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
       to: toList,
-      subject: `Monthly Comparative Statement Statistics - ${currentMonth}  (${dept}) `,
+      subject: `Monthly Comparative Statement Statistics - ${lastMonth}  (${dept} (Hire/Asset)) `,
       html: `<!DOCTYPE html>
                 <html>
                 <head>

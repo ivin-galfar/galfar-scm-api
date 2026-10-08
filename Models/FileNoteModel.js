@@ -38,13 +38,63 @@ const updateWefDateInContent = (content, dateValue) => {
         .map((child) => child.text || "")
         .join("");
       if (/w\.e\.f/i.test(paragraphText)) {
+        const datePattern =
+          /(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})/;
         return {
           ...node,
-          content: node.content.map((child) => {
-            const isWefDate =
-              child?.type === "text" &&
-              child.marks?.some((mark) => mark.type === "readOnlyText");
-            return isWefDate ? { ...child, text: formattedDate } : child;
+          content: node.content.flatMap((child) => {
+            if (child?.type !== "text") {
+              return child;
+            }
+
+            const match = child.text?.match(datePattern);
+
+            if (!match) {
+              return child;
+            }
+
+            const isBold = child.marks?.some((mark) => mark?.type === "bold");
+            const isReadonly = child.marks?.some(
+              (mark) => mark?.type === "readOnlyText",
+            );
+
+            //if user not trying to change the date manually
+            if (match[0] === formattedDate && isBold && isReadonly) {
+              return child;
+            }
+
+            const beforeDate = child.text.slice(0, match.index);
+
+            const afterDate = child.text.slice(match.index + match[0].length);
+
+            return [
+              ...(beforeDate
+                ? [
+                    {
+                      ...child,
+                      text: beforeDate,
+                    },
+                  ]
+                : []),
+
+              {
+                ...child,
+                text: formattedDate,
+                marks: [
+                  ...(child.marks || []).filter((mark) => mark.type !== "bold"),
+                  { type: "bold" },
+                ],
+              },
+
+              ...(afterDate
+                ? [
+                    {
+                      ...child,
+                      text: afterDate,
+                    },
+                  ]
+                : []),
+            ];
           }),
         };
       }
@@ -71,11 +121,18 @@ export const insertFileNotes = async ({
 }) => {
   const projectValue = project === "" ? null : parseInt(project, 10);
   try {
+    const normalizedContent =
+      wef && content ? updateWefDateInContent(content, wef) : content;
+    const originalContent =
+      typeof content === "string" ? JSON.parse(content) : content;
+    const contentWefUpdated =
+      Boolean(wef && content) &&
+      JSON.stringify(originalContent) !== JSON.stringify(normalizedContent);
     const query = `INSERT INTO file_note (department_id, name, content,sentforapproval,status,type,category,file,file_name,project_code,"w.e.f") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`;
     const values = [
       dept_id,
       name,
-      content,
+      normalizedContent,
       sentforapproval,
       "created",
       type,
@@ -87,7 +144,14 @@ export const insertFileNotes = async ({
     ];
 
     const { rows } = await pool.query(query, values);
-    return rows[0];
+
+    return {
+      ...rows[0],
+      contentWefUpdated,
+      ...(contentWefUpdated && {
+        message: `Fleet off-hire date updated to the selected date (${formatWefDateForContent(wef)}).`,
+      }),
+    };
   } catch (error) {
     console.error("Error:", error);
     throw error;
@@ -116,7 +180,12 @@ export const filenote = async (
     const normalizedRoles = (Array.isArray(role) ? role : [role]).filter(
       Boolean,
     );
-    const firstRole = normalizedRoles[0] || "";
+    const fileNoteRoles = normalizedRoles.filter(
+      (currentRole) => currentRole !== "initfr",
+    );
+
+    const noFileNoteAccess = fileNoteRoles.length === 0;
+    const firstRole = fileNoteRoles[0] || "";
 
     // Map role to pending condition
     const ROLE_PENDING_CONDITIONS = {
@@ -136,7 +205,7 @@ export const filenote = async (
       pd: "status LIKE 'pending for pd'",
     };
 
-    const pendingConditions = normalizedRoles
+    const pendingConditions = fileNoteRoles
       .map((currentRole) => ROLE_PENDING_CONDITIONS[currentRole])
       .filter(Boolean);
     const pendingCondition =
@@ -166,8 +235,11 @@ export const filenote = async (
             FROM file_note`;
 
       const last7DaysConditions = [];
+      if (noFileNoteAccess) {
+        last7DaysConditions.push("FALSE");
+      }
       if (department_id) {
-        const filteredDepts = normalizedRoles.includes("hod")
+        const filteredDepts = fileNoteRoles.includes("hod")
           ? department_id.filter((d) => d !== 2)
           : department_id;
         last7DaysConditions.push(
@@ -179,12 +251,12 @@ export const filenote = async (
         last7DaysConditions.push("deleted = 0");
       }
 
-      if (normalizedRoles.some((r) => ["initpr", "initdc"].includes(r))) {
+      if (fileNoteRoles.some((r) => ["initpr", "initdc"].includes(r))) {
         const categoryValues = [];
-        if (normalizedRoles.includes("initpr")) {
+        if (fileNoteRoles.includes("initpr")) {
           categoryValues.push("Demob");
         }
-        if (normalizedRoles.includes("initdc")) {
+        if (fileNoteRoles.includes("initdc")) {
           categoryValues.push("FWA");
         }
         if (categoryValues.length > 0) {
@@ -199,7 +271,7 @@ export const filenote = async (
           );
           dashValues.push(project_code);
         }
-      } else if (["cm", "pm", "pd"].some((r) => normalizedRoles.includes(r))) {
+      } else if (["cm", "pm", "pd"].some((r) => fileNoteRoles.includes(r))) {
         last7DaysConditions.push(
           `category IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
         );
@@ -208,16 +280,16 @@ export const filenote = async (
           `project_code = ANY($${dashValues.length + 1})`,
         );
         dashValues.push(project_code);
-      } else if (normalizedRoles.includes("view")) {
+      } else if (fileNoteRoles.includes("view")) {
         last7DaysConditions.push(`category IN ($${dashValues.length + 1})`);
         dashValues.push("Demob");
       } else {
-        if (normalizedRoles.includes("hod")) {
+        if (fileNoteRoles.includes("hod")) {
           last7DaysConditions.push(
             `category NOT IN ($${dashValues.length + 1})`,
           );
           dashValues.push("FWA");
-        } else if (!normalizedRoles.includes("gm")) {
+        } else if (!fileNoteRoles.includes("gm")) {
           last7DaysConditions.push(
             `category NOT IN ($${dashValues.length + 1}, $${dashValues.length + 2})`,
           );
@@ -239,6 +311,9 @@ export const filenote = async (
     }
 
     // Add access control filter
+    if (noFileNoteAccess) {
+      whereConditions.push("FALSE");
+    }
     if (!isadmin && module === "/filenote") {
       whereConditions.push(
         `(status LIKE $${values.length + 1} OR status = $${values.length + 2} OR status = $${values.length + 3})`,
@@ -248,7 +323,7 @@ export const filenote = async (
 
     // Add department filter
     if (department_id) {
-      const filteredDepts = normalizedRoles.includes("hod")
+      const filteredDepts = fileNoteRoles.includes("hod")
         ? department_id.filter((d) => d !== 2)
         : department_id;
       whereConditions.push(`department_id = ANY($${values.length + 1})`);
@@ -269,12 +344,12 @@ export const filenote = async (
     }
 
     // Add category and project filter based on role
-    if (normalizedRoles.some((r) => ["initpr", "initdc"].includes(r))) {
+    if (fileNoteRoles.some((r) => ["initpr", "initdc"].includes(r))) {
       const categoryValues = [];
-      if (normalizedRoles.includes("initpr")) {
+      if (fileNoteRoles.includes("initpr")) {
         categoryValues.push("Demob");
       }
-      if (normalizedRoles.includes("initdc")) {
+      if (fileNoteRoles.includes("initdc")) {
         categoryValues.push("FWA");
       }
       if (categoryValues.length > 0) {
@@ -290,9 +365,9 @@ export const filenote = async (
         values.push(project_code);
       }
     } else if (
-      ["cm", "pm", "pd", "gm"].some((r) => normalizedRoles.includes(r))
+      ["cm", "pm", "pd", "gm"].some((r) => fileNoteRoles.includes(r))
     ) {
-      if (!normalizedRoles.includes("gm")) {
+      if (!fileNoteRoles.includes("gm")) {
         whereConditions.push(
           `category IN ($${values.length + 1}, $${values.length + 2})`,
         );
@@ -302,13 +377,13 @@ export const filenote = async (
         whereConditions.push(`project_code = ANY($${values.length + 1})`);
         values.push(project_code);
       }
-    } else if (normalizedRoles.includes("view")) {
+    } else if (fileNoteRoles.includes("view")) {
       whereConditions.push(`category IN ($${values.length + 1})`);
       values.push("Demob");
       whereConditions.push(`project_code = ANY($${values.length + 1})`);
       values.push(project_code);
     } else {
-      if (normalizedRoles.includes("hod")) {
+      if (fileNoteRoles.includes("hod")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
         if (
@@ -319,20 +394,22 @@ export const filenote = async (
           whereConditions.push(`project_code = ANY($${values.length + 1})`);
           values.push(project_code);
         }
-      } else if (normalizedRoles.includes("inith")) {
+      } else if (fileNoteRoles.includes("inith")) {
         whereConditions.push(`category NOT IN ($${values.length + 1})`);
         values.push("FWA");
         if (categoryFilter == "Demob") {
           whereConditions.push(`project_code = ANY($${values.length + 1})`);
           values.push(project_code);
         }
-      } else if (normalizedRoles.includes("initfn")) {
-        whereConditions.push(`category NOT IN ($${values.length + 1})`);
-        values.push("FWA");
+      } else if (fileNoteRoles.includes("initfn")) {
+        whereConditions.push(
+          `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
+        );
+        values.push("FWA", "Demob");
       } else if (
-        !normalizedRoles.includes("gm") &&
-        !normalizedRoles.includes("ceo") &&
-        !normalizedRoles.includes("initfn")
+        !fileNoteRoles.includes("gm") &&
+        !fileNoteRoles.includes("ceo") &&
+        !fileNoteRoles.includes("initfn")
       ) {
         whereConditions.push(
           `category NOT IN ($${values.length + 1}, $${values.length + 2})`,
@@ -361,7 +438,7 @@ export const filenote = async (
     if (module === "/dashboardfn" && statusfilter !== "All") {
       if (statusfilter === "Pending") {
         const pendingPattern =
-          isadmin || normalizedRoles.includes("view")
+          isadmin || fileNoteRoles.includes("view")
             ? "%pending%"
             : `%${firstRole.toLowerCase()}`;
         whereConditions.push(`status LIKE $${values.length + 1}`);

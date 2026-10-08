@@ -1,5 +1,5 @@
 import express from "express";
-import dotenv from "dotenv";
+import "dotenv/config";
 import { notFound, errorHandler } from "./Middlewares/errormiddlewares.js";
 import cors from "cors";
 import userRoutes from "./Routes/userRoutes.js";
@@ -13,11 +13,11 @@ import BRRoutes from "./Routes/BuyRentRoutes.js";
 import FNRoutes from "./Routes/FileNoteRoutes.js";
 import ApprovalDataRoutes from "./Routes/ApprovalDataRoutes.js";
 import GeneralRoutes from "./Routes/GeneralRoutes.js";
-// import SharePointRoutes from "./Routes/sharepointRoutes.js";
+import FleetRequestRoutes from "./Routes/FleetRequestRoutes.js";
+import SharePointRoutes from "./Routes/SharePointRoutes.js";
 import verifyToken from "./Utils/jwtTokenValidation.js";
 import { cronemails } from "./cron/emailCron.js";
 import { pendingSLACron } from "./cron/pendingSLACron.js";
-dotenv.config();
 const port = process.env.PORT;
 
 const app = express();
@@ -50,9 +50,9 @@ app.use("/brstatement", verifyToken, BRRoutes);
 app.use("/filenote", verifyToken, FNRoutes);
 app.use("/projects", verifyToken, ProjectRoutes);
 app.use("/analytics", verifyToken, ApprovalDataRoutes);
+app.use("/flreq", verifyToken, FleetRequestRoutes);
 app.use("/announcements", verifyToken, GeneralRoutes);
-
-// app.use("/sharepoint", SharePointRoutes);
+app.use("/api/sharepoint", verifyToken, SharePointRoutes);
 app.get("/", (req, res) => res.send("API is running"));
 
 app.use(notFound, errorHandler);

@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
-import { sentemail } from "../Models/logisticsModel.js";
 import { PmCmNames } from "../Models/projectModel.js";
 import { emaillogslg } from "../Models/emailModel.js";
 
@@ -14,6 +13,7 @@ export const ProcessLogisticsEmail = async ({
   comments,
   created_at,
   approvedPdfUrl,
+  approvedpdfName,
   file,
   filename,
   role,
@@ -99,9 +99,8 @@ export const ProcessLogisticsEmail = async ({
     });
     let mailAttachments = [];
     if (!SLA) {
-      const exportedStatementFilename = approvedPdfUrl
-        ? approvedPdfUrl.split("/").pop().split("?")[0] ||
-          "Exported Statement.pdf"
+      const exportedStatementFilename = approvedpdfName
+        ? approvedpdfName || "Exported Statement.pdf"
         : null;
 
       const exportedStatementAttachment = approvedPdfUrl
