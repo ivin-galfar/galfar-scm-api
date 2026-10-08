@@ -10,11 +10,11 @@ This repository is the Node.js API for the Galfar Integrated Web Application. Th
 
 - Node.js using ES modules.
 - Express 5 REST API.
-- MongoDB through Mongoose, with `pg` also available for PostgreSQL integrations.
+- PostgreSQL through `pg` is the active application database.
 - JWT authentication.
 - Nodemailer for workflow notifications.
 - Node cron for scheduled email and SLA jobs.
-- PostgreSQL through `pg` is the active application database. Some dependencies and the legacy README mention MongoDB/Mongoose, but current models issue PostgreSQL SQL through `Config/db.js`.
+- `mongoose` remains installed and the legacy README mentions MongoDB, but active models issue PostgreSQL SQL through `Config/db.js`; do not introduce MongoDB persistence without an explicit architecture change.
 
 Use these commands from the repository root:
 
@@ -90,7 +90,7 @@ Document names only; never commit values:
 | `/projects` | Project data and project CM/PM mapping | JWT |
 | `/analytics` | Consolidated approval analytics | JWT |
 | `/flreq` | Fleet Request creation, listing, detail, document IDs, workflow | JWT + `fl_req` access |
-| `/announcements` | Announcement CRUD | JWT |
+| `/announcements` | Announcement creation and retrieval | JWT |
 
 ## Module Details
 
@@ -196,7 +196,7 @@ Keep the report proportional to the change. Use concise prose for small changes 
 The standard approval flow is:
 
 ```text
-Initiator -> CM -> PM -> HOD -> GM -> CEO -> Approved
+Initiator -> CM -> PM -> HOD -> GM -> Approved
 ```
 
 Special projects include PD between PM and HOD. Use the existing project and approval-flow helpers as the source of truth.
@@ -209,7 +209,7 @@ Expected actions and outcomes:
 - `reject`: save rejection details and notify the initiator.
 - `review`: return the request to the initiator with required comments.
 - `recall`: allow an edit-capable initiator to withdraw a pending request into `recalled`; do not send email.
-- Final approval changes the status to `approved`.
+- GM is the final approver; GM approval changes the status to `approved`.
 
 Do not allow clients to skip approval levels by supplying an arbitrary next status. Validate the requested action against the stored request, authenticated user, project flow, and current status.
 
@@ -241,7 +241,9 @@ Do not allow clients to skip approval levels by supplying an arbitrary next stat
 - `UpdateFleetRequest` updates allowed header fields, items, status, approval history, sent-for-approval state, and soft-delete state.
 - Listing filters distinguish editable drafts/reviews from submitted requests and role-specific pending queues.
 - Document IDs are project-based; generation must remain safe under concurrent creation.
-- Fleet Request items persist required `adnoc_fitments` as `yes` or `no` and `tpi` as `Normal` or `CPIS`; creation and item updates reject missing or invalid selections.
+- Fleet Request items persist required `adnoc_fitments` as `yes` or `no` and `tpi` as `Normal` or `CP - 19`; creation and item updates reject missing or invalid selections.
+- `Utils/fleetRequestValidateItems.js` is the shared boundary for Fleet Request item validation and canonicalization. It accepts snake_case or camelCase ADNOC-fitment input, validates TPI case-insensitively, and persists canonical TPI labels (`Normal`, `CP - 19`). Do not bypass it in create/update controllers.
+- TPI accepts only the canonical labels `Normal` and `CP - 19`; do not add aliases unless both clients and stored-data compatibility are handled explicitly.
 
 ## Email Notifications
 
@@ -272,6 +274,7 @@ Password-reset request, token verification, and password update are separate pub
 `ProcessFREmail` treats the persisted status as authoritative:
 
 - `pending for <role>` -> that role is the primary recipient.
+- After PM approval, a separate intimation email is sent to department `inith` users stating whether the request is now in the HOD queue or, for special projects, the PD queue. The normal next-approver email remains unchanged.
 - `review`, `rejected`, or `approved` -> `initfr` users for the project are primary recipients.
 - Final approved email additionally CCs project CM/PM and department HOD/GM recipients, deduplicated against primary recipients.
 - Role lookup uses project and department constraints through user-model helpers.

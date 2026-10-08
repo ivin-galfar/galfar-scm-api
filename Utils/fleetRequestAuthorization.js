@@ -3,14 +3,13 @@ const normalize = (value) =>
     .trim()
     .toLowerCase();
 
-export const STANDARD_FLEET_APPROVAL_ROLES = ["cm", "pm", "hod", "gm", "ceo"];
+export const STANDARD_FLEET_APPROVAL_ROLES = ["cm", "pm", "hod", "gm"];
 export const SPECIAL_FLEET_APPROVAL_ROLES = [
   "cm",
   "pm",
   "pd",
   "hod",
   "gm",
-  "ceo",
 ];
 
 export const getUserRoles = (user) =>

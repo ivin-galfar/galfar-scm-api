@@ -453,8 +453,6 @@ export const filenote = async (
     if (whereConditions.length > 0) {
       query += " WHERE " + whereConditions.join(" AND ");
     }
-    console.log(query);
-    console.log(values);
 
     // Add sorting
     if (!count && module !== "/") {

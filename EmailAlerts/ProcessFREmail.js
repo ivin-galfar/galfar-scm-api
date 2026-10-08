@@ -13,7 +13,7 @@ const normalize = (value) =>
 
 const getActorRole = (role) => {
   const roles = Array.isArray(role) ? role : [role];
-  const approvalRoles = ["cm", "pm", "pd", "hod", "gm", "ceo"];
+  const approvalRoles = ["cm", "pm", "pd", "hod", "gm"];
   return (
     roles.map(normalize).find((item) => approvalRoles.includes(item)) ??
     "initiator"
@@ -50,6 +50,55 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
+export const shouldSendInithIntimation = ({ role, status }) => {
+  const nextRole = normalize(status)
+    .match(/^pending for\s+(.+)$/)?.[1]
+    ?.trim();
+  return getActorRole(role) === "pm" && ["hod", "pd"].includes(nextRole);
+};
+
+export const buildInithIntimationEmail = ({
+  recipients,
+  doc_id,
+  project,
+  location,
+  created_at,
+  nextRole,
+  requestUrl,
+}) => ({
+  to: recipients,
+  subject: `Intimation for Fleet Request - PM Approved the document : ${doc_id}`,
+  html: `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0; color: #333;">
+      <p style="margin: 0 0 16px;">Dear User,</p>
+      <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6;">
+        The following Fleet Request has been approved by PM and is now in the ${escapeHtml(nextRole.toUpperCase())} queue. This is an intimation so that you can proactively prepare for the upcoming work.
+      </p>
+      <div style="margin: 16px 0; padding: 18px; border-radius: 8px; font-size: 14px; line-height: 1.2;">
+        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
+        <ul style="margin: 0; padding-left: 18px;">
+          <li style="margin-bottom: 8px;"><strong>Doc No.:</strong> ${escapeHtml(doc_id)}</li>
+          <li style="margin-bottom: 8px;"><strong>Project:</strong> ${escapeHtml(project)}</li>
+          <li style="margin-bottom: 8px;"><strong>Location:</strong> ${escapeHtml(location)}</li>
+          <li style="margin-bottom: 8px;"><strong>Approved By:</strong> PM</li>
+          <li style="margin-bottom: 8px;"><strong>Awaiting Approval For:</strong> ${escapeHtml(nextRole.toUpperCase())}</li>
+          <li><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
+        </ul>
+      </div>
+      <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6;">
+        You can open the Fleet Request in the application:
+        <a href="${requestUrl}" style="color: #0f4b91; text-decoration: underline; font-weight: 700;">View Fleet Request.</a>
+      </p>
+      <p style="margin: 24px 0 4px;">Thank you,</p>
+      <p style="margin: 0; font-weight: 600;">Software Development Team</p>
+      <p style="margin: 0; font-weight: 600;">Galfar Engineering and Contracting WLL Emirates</p>
+      <div style="padding: 8px 6px; font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+        ***This is a system-generated email. Please do not reply to this message.***
+      </div>
+    </div>
+  `,
+});
+
 export const ProcessFREmail = async ({
   id,
   role,
@@ -73,11 +122,24 @@ export const ProcessFREmail = async ({
 
   let recipients;
   let ccemail = [];
+  let inithIntimationRecipients = [];
+  const sendInithIntimation = shouldSendInithIntimation({
+    role,
+    status: normalizedStatus,
+  });
   try {
     recipients =
       nextRole === "initfr"
         ? await getEmailsByProject(project, nextRole)
         : await getEmailsByRole(nextRole, dept_id, project);
+
+    if (sendInithIntimation) {
+      inithIntimationRecipients = await getEmailsByRole(
+        "inith",
+        dept_id,
+        project,
+      );
+    }
 
     if (normalizedStatus === "approved") {
       ccemail.push(
@@ -89,7 +151,6 @@ export const ProcessFREmail = async ({
         )),
       );
       ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
-      ccemail.push(...(await getMultipleEmailsByRole(["gm"], dept_id)));
       ccemail.push(...(await getMultipleEmailsByRole(["inith"], dept_id)));
 
       const primaryRecipients = new Set(recipients);
@@ -206,10 +267,33 @@ export const ProcessFREmail = async ({
       `,
     });
 
+    let inithIntimationInfo = null;
+    if (sendInithIntimation) {
+      if (inithIntimationRecipients.length === 0) {
+        throw new Error(
+          "No email recipients found for PM approval intimation.",
+        );
+      }
+
+      inithIntimationInfo = await transporter.sendMail({
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+        ...buildInithIntimationEmail({
+          recipients: inithIntimationRecipients,
+          doc_id,
+          project,
+          location,
+          created_at,
+          nextRole,
+          requestUrl,
+        }),
+      });
+    }
+
     return {
       success: true,
       message: "Email sent successfully.",
       emailInfo,
+      inithIntimationInfo,
       approvedInfo: {
         role: actorRole,
         datetime: new Date(),
