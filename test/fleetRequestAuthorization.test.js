@@ -53,9 +53,9 @@ test("statement middleware denies no access and exposes capabilities on success"
 });
 
 test("standard and special approval sequences advance every configured role", () => {
-  assert.deepEqual(getFleetApprovalRoles(7097), ["cm", "pm", "hod", "gm", "ceo"]);
-  assert.deepEqual(getFleetApprovalRoles(7102), ["cm", "pm", "pd", "hod", "gm", "ceo"]);
-  for (const [project, flow] of [[7097, ["cm", "pm", "hod", "gm", "ceo"]], [7102, ["cm", "pm", "pd", "hod", "gm", "ceo"]]]) {
+  assert.deepEqual(getFleetApprovalRoles(7097), ["cm", "pm", "hod", "gm"]);
+  assert.deepEqual(getFleetApprovalRoles(7102), ["cm", "pm", "pd", "hod", "gm"]);
+  for (const [project, flow] of [[7097, ["cm", "pm", "hod", "gm"]], [7102, ["cm", "pm", "pd", "hod", "gm"]]]) {
     assert.equal(getNextFleetRequestStatus({ project }, "initiator"), "pending for cm");
     flow.forEach((role, index) => assert.equal(
       getNextFleetRequestStatus({ project }, role),
@@ -65,7 +65,7 @@ test("standard and special approval sequences advance every configured role", ()
 });
 
 test("each assigned approver can approve, reject, or review at its step", () => {
-  for (const [project, roles] of [[7097, ["cm", "pm", "hod", "gm", "ceo"]], [7102, ["cm", "pm", "pd", "hod", "gm", "ceo"]]]) {
+  for (const [project, roles] of [[7097, ["cm", "pm", "hod", "gm"]], [7102, ["cm", "pm", "pd", "hod", "gm"]]]) {
     for (const role of roles) {
       const request = { project, status: `pending for ${role}` };
       const actor = user(role, "view", [project]);
@@ -158,4 +158,28 @@ test("a completed step cannot be approved again from its new status", () => {
     access,
     action: "approve",
   }).statusCode, 403);
+});
+
+test("GM is the final Fleet Request approver and CEO cannot approve", () => {
+  const request = { project: 7097, status: "pending for gm" };
+  const gm = user("gm", "view", []);
+  const gmResult = authorizeFleetRequestAction({
+    request,
+    user: gm,
+    access: getStatementAccess(gm, "fl_req"),
+    action: "approve",
+  });
+  assert.equal(gmResult.actorRole, "gm");
+  assert.equal(gmResult.nextStatus, "approved");
+
+  const ceo = user("ceo", "view", []);
+  assert.equal(
+    authorizeFleetRequestAction({
+      request,
+      user: ceo,
+      access: getStatementAccess(ceo, "fl_req"),
+      action: "approve",
+    }).statusCode,
+    403,
+  );
 });

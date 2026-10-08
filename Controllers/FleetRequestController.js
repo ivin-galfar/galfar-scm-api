@@ -10,7 +10,10 @@ import {
   canAccessFleetProject,
   getUserRoles,
 } from "../Utils/fleetRequestAuthorization.js";
-import { hasInvalidFitmentSelection } from "../Utils/fleetRequestValidateItems.js";
+import {
+  hasInvalidFitmentSelection,
+  normalizeFleetRequestItems,
+} from "../Utils/fleetRequestValidateItems.js";
 
 export const RequireFleetRequestInitiator = (req, res, next) => {
   if (!req.statementAccess?.canEdit) {
@@ -44,7 +47,7 @@ export const AddFleetRequest = async (req, res) => {
   ) {
     return res.status(400).json({
       error:
-        "project, date, location, a non-empty items array, a Yes/No ADNOC Fitments selection, and a Normal/CPIS TPI selection are required",
+        "project, date, location, a non-empty items array, a Yes/No ADNOC Fitments selection, and a Normal/CP - 19 TPI selection are required",
     });
   }
   if (!canAccessFleetProject(req.user, project)) return denyProject(res);
@@ -55,7 +58,7 @@ export const AddFleetRequest = async (req, res) => {
       date,
       location,
       status: "created",
-      items: fleetRequestItems,
+      items: normalizeFleetRequestItems(fleetRequestItems),
     });
 
     return res.status(201).json(fleetRequest);
@@ -86,7 +89,7 @@ export const UpdateFleetRequestDetails = async (req, res) => {
   ) {
     return res.status(400).json({
       error:
-        "items must be a non-empty array with a Yes/No ADNOC Fitments selection and a Normal/CPIS TPI selection",
+        "items must be a non-empty array with a Yes/No ADNOC Fitments selection and a Normal/CP - 19 TPI selection",
     });
   }
 
@@ -127,7 +130,8 @@ export const UpdateFleetRequestDetails = async (req, res) => {
             : undefined,
       role: authorization.actorRole,
       comments,
-      items,
+      items:
+        items === undefined ? undefined : normalizeFleetRequestItems(items),
       expectedStatus: existingRequest.status,
       deleted,
     });
