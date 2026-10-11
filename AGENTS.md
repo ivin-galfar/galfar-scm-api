@@ -62,6 +62,7 @@ Workflow updates and emails are separate HTTP operations. A successful database 
 - `/users` is mounted without a global JWT middleware because login/registration/reset validation must be public; protect sensitive child routes individually when adding them.
 - `/emailnotify` has public password-reset routes first, then applies `verifyToken` to workflow email routes.
 - `/receipts`, `/particulars`, `/department`, `/logistics`, `/brstatement`, `/filenote`, `/projects`, `/analytics`, `/flreq`, `/announcements`, and `/api/sharepoint` are mounted behind `verifyToken` in `server.js`.
+- `/receipts`, `/particulars`, `/department`, `/logistics`, `/brstatement`, `/filenote`, `/projects`, `/analytics`, `/flreq`, and `/announcements` are mounted behind `verifyToken` in `server.js`.
 - CORS permits no-origin requests and origins matching `PROD_URL` or `DEV_URL`.
 
 ### Environment variables

@@ -105,9 +105,8 @@ export async function fetchUserPhoto(req, res) {
       message: error.response?.data?.error?.message ?? error.message,
     });
     if (graphStatus === 404) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Microsoft account photo not found" });
+      res.set({ "Cache-Control": "private, max-age=300" });
+      return res.status(200).end();
     }
     return res.status(graphStatus === 400 ? 400 : 500).json({
       success: false,
