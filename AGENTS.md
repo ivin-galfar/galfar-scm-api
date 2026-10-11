@@ -61,7 +61,7 @@ Workflow updates and emails are separate HTTP operations. A successful database 
 
 - `/users` is mounted without a global JWT middleware because login/registration/reset validation must be public; protect sensitive child routes individually when adding them.
 - `/emailnotify` has public password-reset routes first, then applies `verifyToken` to workflow email routes.
-- `/receipts`, `/particulars`, `/department`, `/logistics`, `/brstatement`, `/filenote`, `/projects`, `/analytics`, `/flreq`, and `/announcements` are mounted behind `verifyToken` in `server.js`.
+- `/receipts`, `/particulars`, `/department`, `/logistics`, `/brstatement`, `/filenote`, `/projects`, `/analytics`, `/flreq`, `/announcements`, and `/api/sharepoint` are mounted behind `verifyToken` in `server.js`.
 - CORS permits no-origin requests and origins matching `PROD_URL` or `DEV_URL`.
 
 ### Environment variables
@@ -73,6 +73,7 @@ Document names only; never commit values:
 - PostgreSQL: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD`, `PGPORT`.
 - SMTP: `EMAIL_USER`, `EMAIL_PASSWORD`, `FROM_EMAIL`, `FROM_NAME`.
 - Azure receipt storage: `STORAGE_ACCOUNT_NAME`, `STORAGE_ACCOUNT_KEY`, `STORAGE_CONTAINER_NAME`.
+- SharePoint: `SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_HOSTNAME`, `SHAREPOINT_SITE_PATH`, `SHAREPOINT_ALLOWED_LISTS`.
 - Workflow/SLA: `SPECIAL_PROJECTS`, `THRESHOLDHOURS`, `NEARING_THRESHOLDHOURS`.
 
 ## Mounted API Map
@@ -91,6 +92,7 @@ Document names only; never commit values:
 | `/analytics` | Consolidated approval analytics | JWT |
 | `/flreq` | Fleet Request creation, listing, detail, document IDs, workflow | JWT + `fl_req` access |
 | `/announcements` | Announcement creation and retrieval | JWT |
+| `/api/sharepoint` | SharePoint list items, list totals, and user profile photos | JWT |
 
 ## Module Details
 
@@ -134,6 +136,13 @@ Document names only; never commit values:
 - `/analytics/approvals` consolidates pending, submitted, created, rejected, approved, and nearing-SLA data across modules.
 - Role/status matching in `Models/approvalData.js` affects the Home analytics cards and pending dashboard.
 - Announcements use `GeneralRoutes`, `Controllers/Announcements.js`, and `Models/Announcement.js`.
+
+### SharePoint
+
+- `/api/sharepoint/items` returns one page of an allowed SharePoint list; pagination uses the signed `nextCursor` returned by the service.
+- `/api/sharepoint/count` returns the overall list count from Microsoft Graph beta `itemCount`; it ignores viewer OData filters and is a metadata snapshot, not a transactional count. It uses the existing server-side Graph client-secret authentication and Graph permissions. The Graph beta endpoint may change.
+- `/api/sharepoint/user-photo/:email` returns a Microsoft Graph profile photo for the supplied email.
+- All SharePoint endpoints require JWT authentication. List, field, and indexed filter allowlists are configured through SharePoint environment variables.
 
 ### Scheduled work
 
