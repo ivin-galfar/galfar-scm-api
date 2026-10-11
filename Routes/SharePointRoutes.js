@@ -9,6 +9,5 @@ const router = express.Router();
 
 router.get("/items", fetchSharePointData);
 router.get("/count", fetchSharePointDataCount);
-router.get("/user-photo/:email", fetchUserPhoto);
 
 export default router;
