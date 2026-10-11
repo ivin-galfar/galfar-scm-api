@@ -2,7 +2,6 @@ import express from "express";
 import {
   fetchSharePointDataCount,
   fetchSharePointData,
-  fetchUserPhoto,
 } from "../Controllers/sharePoint.js";
 
 const router = express.Router();
