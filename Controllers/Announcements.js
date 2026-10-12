@@ -39,8 +39,6 @@ export const addAnnouncement = async (req, res) => {
     );
     return res.status(201).json(announcement);
   } catch (error) {
-    console.log();
-
     return res.status(500).json({ error: error.message });
   }
 };

@@ -70,6 +70,32 @@ test("getUserPhoto fetches Microsoft Graph photo bytes", async () => {
   }
 });
 
+test("getUserPhoto returns null when Microsoft Graph has no photo", async () => {
+  const environment = preserveGraphEnvironment();
+  const originalPost = axios.post;
+  const originalCreate = axios.create;
+
+  process.env.SHAREPOINT_TENANT_ID = "tenant-id";
+  process.env.SHAREPOINT_CLIENT_ID = "client-id";
+  process.env.SHAREPOINT_CLIENT_SECRET = "client-secret";
+  axios.post = async () => ({ data: { access_token: "access-token" } });
+  axios.create = () => ({
+    get: async () => {
+      const error = new Error("Request failed with status code 404");
+      error.response = { status: 404 };
+      throw error;
+    },
+  });
+
+  try {
+    assert.equal(await getUserPhoto("person@example.com"), null);
+  } finally {
+    axios.post = originalPost;
+    axios.create = originalCreate;
+    restoreGraphEnvironment(environment);
+  }
+});
+
 test("getUserPhoto rejects missing Microsoft Graph configuration", async () => {
   const environment = preserveGraphEnvironment();
 

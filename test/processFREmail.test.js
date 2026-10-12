@@ -32,6 +32,9 @@ test("inith intimation does not apply to other workflow transitions", () => {
 });
 
 test("inith intimation identifies the next queue and escapes document fields", () => {
+  const attachments = [
+    { filename: "Fleet-Request.pdf", path: "https://files.example.com/fr.pdf" },
+  ];
   const email = buildInithIntimationEmail({
     recipients: ["initiator@example.com"],
     doc_id: "FR-<123>",
@@ -40,6 +43,7 @@ test("inith intimation identifies the next queue and escapes document fields", (
     created_at: "2026-10-07T00:00:00.000Z",
     nextRole: "pd",
     requestUrl: "https://example.com/fleetrequest/123",
+    attachments,
   });
 
   assert.deepEqual(email.to, ["initiator@example.com"]);
@@ -48,4 +52,5 @@ test("inith intimation identifies the next queue and escapes document fields", (
   assert.match(email.html, /FR-&lt;123&gt;/);
   assert.match(email.html, /Site &amp; Yard/);
   assert.match(email.html, /https:\/\/example\.com\/fleetrequest\/123/);
+  assert.deepEqual(email.attachments, attachments);
 });

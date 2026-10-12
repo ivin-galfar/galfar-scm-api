@@ -466,12 +466,18 @@ export async function getSharePointData(options = {}) {
 
 export async function getUserPhoto(email) {
   const graph = await getGraphClient(getGraphConfig());
-  const response = await graph.get(
-    `/users/${encodeURIComponent(email)}/photo/$value`,
-    {
-      responseType: "arraybuffer",
-    },
-  );
+  let response;
+  try {
+    response = await graph.get(
+      `/users/${encodeURIComponent(email)}/photo/$value`,
+      {
+        responseType: "arraybuffer",
+      },
+    );
+  } catch (error) {
+    if (error.response?.status === 404) return null;
+    throw error;
+  }
   return {
     contentType: response.headers["content-type"] || "image/jpeg",
     data: Buffer.from(response.data),

@@ -65,9 +65,11 @@ export const buildInithIntimationEmail = ({
   created_at,
   nextRole,
   requestUrl,
+  attachments = [],
 }) => ({
   to: recipients,
   subject: `Intimation for Fleet Request - PM Approved the document : ${doc_id}`,
+  attachments,
   html: `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0; color: #333;">
       <p style="margin: 0 0 16px;">Dear User,</p>
@@ -285,6 +287,7 @@ export const ProcessFREmail = async ({
           created_at,
           nextRole,
           requestUrl,
+          attachments: mailAttachments ?? [],
         }),
       });
     }

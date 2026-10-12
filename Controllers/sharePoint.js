@@ -7,6 +7,11 @@ import {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export function respondWithMissingUserPhoto(res) {
+  res.set({ "Cache-Control": "private, max-age=300" });
+  return res.status(200).end();
+}
+
 function respondWithSharePointError(error, res) {
   const graphStatus = error.response?.status;
   const headers = error.response?.headers;
@@ -91,6 +96,9 @@ export async function fetchUserPhoto(req, res) {
   }
   try {
     const photo = await getUserPhoto(email);
+    if (!photo) {
+      return respondWithMissingUserPhoto(res);
+    }
 
     res.set({
       "Content-Type": photo.contentType,
@@ -104,10 +112,6 @@ export async function fetchUserPhoto(req, res) {
       status: graphStatus,
       message: error.response?.data?.error?.message ?? error.message,
     });
-    if (graphStatus === 404) {
-      res.set({ "Cache-Control": "private, max-age=300" });
-      return res.status(200).end();
-    }
     return res.status(graphStatus === 400 ? 400 : 500).json({
       success: false,
       error: "Unable to retrieve Microsoft account photo",
