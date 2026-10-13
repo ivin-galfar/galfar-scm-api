@@ -25,6 +25,21 @@ const sourceQueries = [
   ["fleet_request", "SELECT * FROM fleet_request", "plant"],
 ];
 
+const OVERALL_STATEMENTS_COUNT_QUERY = `
+  SELECT
+    (SELECT COUNT(*) FROM receipts WHERE deleted = 0) +
+    (SELECT COUNT(*) FROM log_statements WHERE deleted = 0) +
+    (SELECT COUNT(*) FROM file_note WHERE deleted = 0) +
+    (SELECT COUNT(*) FROM buy_rent_statements WHERE deleted = 0) +
+    (SELECT COUNT(*) FROM fleet_request WHERE deleted = 0)
+    AS total
+`;
+
+export const getOverallStatementsCount = async () => {
+  const { rows } = await pool.query(OVERALL_STATEMENTS_COUNT_QUERY);
+  return Number(rows[0]?.total ?? 0);
+};
+
 const asArray = (value) => {
   if (value === undefined || value === null || value === "") return [];
   return (Array.isArray(value) ? value : String(value).split(","))
@@ -135,6 +150,8 @@ export const approvalData = async ({
     const isInit = roles.every((r) => r.includes("initfn"));
     const isInitfleet = roles.every((r) => r.includes("initfr"));
     const isIncharge = roles.includes("incharge");
+    const overallStatementsCountPromise = getOverallStatementsCount();
+
     const queries = sourceQueries.map(async ([source, query, department]) => {
       const isAllowedForRole =
         (!isPm &&
@@ -214,7 +231,10 @@ export const approvalData = async ({
       });
     });
 
-    const sourceRows = await Promise.all(queries);
+    const [sourceRows, overallStatementsCount] = await Promise.all([
+      Promise.all(queries),
+      overallStatementsCountPromise,
+    ]);
 
     const filteredRows = sourceRows.map((records) =>
       records.filter((record) => record),
@@ -561,7 +581,7 @@ export const approvalData = async ({
       retuned_to_you: wholeRawData.for_you.retuned_to_you,
       nearing_reminder: wholeRawData.for_you.nearing_reminder,
       escalations_triggered: wholeRawData.for_you.escalations_triggered,
-      // countData,
+      overall_statements_count: overallStatementsCount,
     };
   } catch (error) {
     console.log(error);

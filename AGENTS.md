@@ -135,6 +135,7 @@ Document names only; never commit values:
 ### Analytics and announcements
 
 - `/analytics/approvals` consolidates pending, submitted, created, rejected, approved, and nearing-SLA data across modules.
+- Its `all_statements` value is the overall count across receipts, logistics, file notes, buy-vs-rent, and fleet requests, independent of the requesting user's role, department, and project filters; each source counts only rows where `deleted = 0`. The frontend uses this count for the digital milestone.
 - Role/status matching in `Models/approvalData.js` affects the Home analytics cards and pending dashboard.
 - Announcements use `GeneralRoutes`, `Controllers/Announcements.js`, and `Models/Announcement.js`.
 

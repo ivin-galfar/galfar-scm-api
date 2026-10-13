@@ -154,11 +154,13 @@ export const FleetRequest = async (req, res) => {
   const { module, page, limit, statusfilter, projects } = req.query;
 
   const canEdit = req.statementAccess?.canEdit === true;
+  const hireusers = req.user.role.includes("inith");
 
   const userRoles = getUserRoles(req.user);
   const isAdmin = req.user?.is_admin === true;
-  const canViewAllPending = isAdmin && canEdit;
-  const canViewAllProjects = ["hod", "gm", "ceo"].some((role) =>
+
+  const canViewAllPending = isAdmin && (canEdit || hireusers);
+  const canViewAllProjects = ["inith", "hod", "gm", "ceo"].some((role) =>
     userRoles.includes(role),
   );
 
@@ -184,7 +186,7 @@ export const FleetRequest = async (req, res) => {
   }
   try {
     const fleetrequests = await FetchFleetRequest(
-      canViewAllProjects ? undefined : projects,
+      projects,
       module,
       canEdit,
       page,
