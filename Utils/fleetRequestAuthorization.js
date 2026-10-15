@@ -4,13 +4,8 @@ const normalize = (value) =>
     .toLowerCase();
 
 export const STANDARD_FLEET_APPROVAL_ROLES = ["cm", "pm", "hod", "gm"];
-export const SPECIAL_FLEET_APPROVAL_ROLES = [
-  "cm",
-  "pm",
-  "pd",
-  "hod",
-  "gm",
-];
+export const NORMAL_FLEET_APPROVAL_ROLES = ["cm", "hod", "gm"];
+export const SPECIAL_FLEET_APPROVAL_ROLES = ["cm", "pm", "pd", "hod", "gm"];
 
 export const getUserRoles = (user) =>
   (Array.isArray(user?.role) ? user.role : [user?.role])
@@ -18,14 +13,35 @@ export const getUserRoles = (user) =>
     .map(normalize);
 
 export const getSpecialFleetProjects = () => {
-  const configured = process.env.SPECIAL_PROJECTS || "7102,7104,7106";
-  return configured.split(",").map(Number).filter(Number.isFinite);
+  const configured = process.env.SPECIAL_PROJECTS ?? "";
+  return configured
+    .split(",")
+    .map((project) => project.trim())
+    .filter(Boolean)
+    .map(Number)
+    .filter(Number.isFinite);
 };
 
-export const getFleetApprovalRoles = (project) =>
-  getSpecialFleetProjects().includes(Number(project))
-    ? SPECIAL_FLEET_APPROVAL_ROLES
-    : STANDARD_FLEET_APPROVAL_ROLES;
+export const getNormalFleetProjects = () => {
+  const configured = process.env.NORMAL_PROJECTS ?? "";
+  return configured
+    .split(",")
+    .map((project) => project.trim())
+    .filter(Boolean)
+    .map(Number)
+    .filter(Number.isFinite);
+};
+
+export const getFleetApprovalRoles = (project) => {
+  const projectCode = Number(project);
+  if (getSpecialFleetProjects().includes(projectCode)) {
+    return SPECIAL_FLEET_APPROVAL_ROLES;
+  }
+  if (getNormalFleetProjects().includes(projectCode)) {
+    return NORMAL_FLEET_APPROVAL_ROLES;
+  }
+  return STANDARD_FLEET_APPROVAL_ROLES;
+};
 
 export const getNextFleetRequestStatus = (request, currentRole) => {
   const flow = getFleetApprovalRoles(request?.project);

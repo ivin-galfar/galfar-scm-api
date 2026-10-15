@@ -75,7 +75,7 @@ Document names only; never commit values:
 - SMTP: `EMAIL_USER`, `EMAIL_PASSWORD`, `FROM_EMAIL`, `FROM_NAME`.
 - Azure receipt storage: `STORAGE_ACCOUNT_NAME`, `STORAGE_ACCOUNT_KEY`, `STORAGE_CONTAINER_NAME`.
 - SharePoint: `SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_HOSTNAME`, `SHAREPOINT_SITE_PATH`, `SHAREPOINT_ALLOWED_LISTS`.
-- Workflow/SLA: `SPECIAL_PROJECTS`, `THRESHOLDHOURS`, `NEARING_THRESHOLDHOURS`.
+- Workflow/SLA: `SPECIAL_PROJECTS`, `NORMAL_PROJECTS`, `THRESHOLDHOURS`, `NEARING_THRESHOLDHOURS`.
 
 ## Mounted API Map
 
@@ -204,13 +204,19 @@ Keep the report proportional to the change. Use concise prose for small changes 
 
 ## Fleet Request Workflow
 
-The standard approval flow is:
+Projects listed in `NORMAL_PROJECTS` use the normal approval flow:
 
 ```text
-Initiator -> CM -> PM -> HOD -> GM -> Approved
+Initiator -> CM -> HOD -> GM -> Approved
 ```
 
-Special projects include PD between PM and HOD. Use the existing project and approval-flow helpers as the source of truth.
+Projects listed in `SPECIAL_PROJECTS` use:
+
+```text
+Initiator -> CM -> PM -> PD -> HOD -> GM -> Approved
+```
+
+Projects absent from both lists retain the legacy standard flow: Initiator -> CM -> PM -> HOD -> GM -> Approved. The project-dependent backend flow is defined in `Utils/fleetRequestAuthorization.js`; keep it aligned with the frontend Fleet Request workflow helper.
 
 Expected actions and outcomes:
 
@@ -285,7 +291,7 @@ Password-reset request, token verification, and password update are separate pub
 `ProcessFREmail` treats the persisted status as authoritative:
 
 - `pending for <role>` -> that role is the primary recipient.
-- After PM approval, a separate intimation email is sent to department `inith` users stating whether the request is now in the HOD queue or, for special projects, the PD queue. The normal next-approver email remains unchanged.
+- After CM approval on a normal project, the normal next-approver email goes to the HOD and a separate intimation goes to department `inith` users. After PM approval on a legacy or special flow, the intimation goes to department `inith` users stating whether the request is now in the HOD or PD queue.
 - `review`, `rejected`, or `approved` -> `initfr` users for the project are primary recipients.
 - Final approved email additionally CCs project CM/PM and department HOD/GM recipients, deduplicated against primary recipients.
 - Role lookup uses project and department constraints through user-model helpers.
