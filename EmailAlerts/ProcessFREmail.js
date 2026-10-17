@@ -54,11 +54,17 @@ export const shouldSendInithIntimation = ({ role, status }) => {
   const nextRole = normalize(status)
     .match(/^pending for\s+(.+)$/)?.[1]
     ?.trim();
-  return getActorRole(role) === "pm" && ["hod", "pd"].includes(nextRole);
+  const actorRole = getActorRole(role);
+
+  return (
+    (actorRole === "cm" && nextRole === "hod") ||
+    (actorRole === "pm" && ["hod", "pd"].includes(nextRole))
+  );
 };
 
 export const buildInithIntimationEmail = ({
   recipients,
+  approverRole = "pm",
   doc_id,
   project,
   location,
@@ -68,13 +74,13 @@ export const buildInithIntimationEmail = ({
   attachments = [],
 }) => ({
   to: recipients,
-  subject: `Intimation for Fleet Request - PM Approved the document : ${doc_id}`,
+  subject: `Intimation for Fleet Request - ${normalize(approverRole).toUpperCase()} Approved the document : ${doc_id}`,
   attachments,
   html: `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0; color: #333;">
       <p style="margin: 0 0 16px;">Dear User,</p>
       <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6;">
-        The following Fleet Request has been approved by PM and is now in the ${escapeHtml(nextRole.toUpperCase())} queue. This is an intimation so that you can proactively prepare for the upcoming work.
+        The following Fleet Request has been approved by ${escapeHtml(normalize(approverRole).toUpperCase())} and is now in the ${escapeHtml(nextRole.toUpperCase())} queue. This is an intimation so that you can proactively prepare for the upcoming work.
       </p>
       <div style="margin: 16px 0; padding: 18px; border-radius: 8px; font-size: 14px; line-height: 1.2;">
         <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
@@ -82,7 +88,7 @@ export const buildInithIntimationEmail = ({
           <li style="margin-bottom: 8px;"><strong>Doc No.:</strong> ${escapeHtml(doc_id)}</li>
           <li style="margin-bottom: 8px;"><strong>Project:</strong> ${escapeHtml(project)}</li>
           <li style="margin-bottom: 8px;"><strong>Location:</strong> ${escapeHtml(location)}</li>
-          <li style="margin-bottom: 8px;"><strong>Approved By:</strong> PM</li>
+          <li style="margin-bottom: 8px;"><strong>Approved By:</strong> ${escapeHtml(normalize(approverRole).toUpperCase())}</li>
           <li style="margin-bottom: 8px;"><strong>Awaiting Approval For:</strong> ${escapeHtml(nextRole.toUpperCase())}</li>
           <li><strong>Created Date:</strong> ${new Date(created_at || Date.now()).toLocaleDateString("en-AE", { timeZone: "Asia/Dubai", year: "numeric", month: "short", day: "2-digit" })}</li>
         </ul>
@@ -273,7 +279,7 @@ export const ProcessFREmail = async ({
     if (sendInithIntimation) {
       if (inithIntimationRecipients.length === 0) {
         throw new Error(
-          "No email recipients found for PM approval intimation.",
+          "No email recipients found for Fleet Request approval intimation.",
         );
       }
 
@@ -281,6 +287,7 @@ export const ProcessFREmail = async ({
         from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
         ...buildInithIntimationEmail({
           recipients: inithIntimationRecipients,
+          approverRole: actorRole,
           doc_id,
           project,
           location,
