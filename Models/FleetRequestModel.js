@@ -202,10 +202,6 @@ export const UpdateFleetRequest = async (
         error.statusCode = 400;
         throw error;
       }
-      await client.query(
-        "DELETE FROM fleet_request_items WHERE fleet_request_id = $1",
-        [id],
-      );
       updatedItems = [];
       for (const [index, item] of items.entries()) {
         const itemResult = await client.query(
@@ -214,7 +210,23 @@ export const UpdateFleetRequest = async (
             quantity, required_from, rental_type, duration, purpose,
             production_qty_envisaged, qty_similar_machines_available, utilization,
             adnoc_fitments, tpi, remarks
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          ON CONFLICT (fleet_request_id, item_no) DO UPDATE SET
+            fleet_description = EXCLUDED.fleet_description,
+            capacity = EXCLUDED.capacity,
+            cicpa = EXCLUDED.cicpa,
+            quantity = EXCLUDED.quantity,
+            required_from = EXCLUDED.required_from,
+            rental_type = EXCLUDED.rental_type,
+            duration = EXCLUDED.duration,
+            purpose = EXCLUDED.purpose,
+            production_qty_envisaged = EXCLUDED.production_qty_envisaged,
+            qty_similar_machines_available = EXCLUDED.qty_similar_machines_available,
+            utilization = EXCLUDED.utilization,
+            adnoc_fitments = EXCLUDED.adnoc_fitments,
+            tpi = EXCLUDED.tpi,
+            remarks = EXCLUDED.remarks
+          RETURNING *`,
           [
             id,
             index + 1,
@@ -236,6 +248,11 @@ export const UpdateFleetRequest = async (
         );
         updatedItems.push(itemResult.rows[0]);
       }
+
+      await client.query(
+        "DELETE FROM fleet_request_items WHERE fleet_request_id = $1 AND item_no > $2",
+        [id, items.length],
+      );
     }
 
     await client.query("COMMIT");
@@ -247,6 +264,23 @@ export const UpdateFleetRequest = async (
   } finally {
     client.release();
   }
+};
+
+export const UpdateFleetRequestItemRefNo = async (requestId, itemId, refNo) => {
+  const { rows } = await pool.query(
+    `
+      UPDATE fleet_request_items AS item
+      SET ref_no = $3
+      FROM fleet_request AS request
+      WHERE item.id = $2
+        AND item.fleet_request_id = request.id
+        AND request.id = $1
+      RETURNING item.id, item.item_no, item.ref_no
+    `,
+    [requestId, itemId, refNo],
+  );
+
+  return rows[0] ?? null;
 };
 
 //minimal data for dashboards data
