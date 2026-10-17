@@ -3,6 +3,7 @@ import {
   FetchFleetRequestVal,
   FetchRequestDoc,
   InsertFleetRequest,
+  UpdateFleetRequestItemRefNo,
   UpdateFleetRequest,
 } from "../Models/FleetRequestModel.js";
 import {
@@ -74,8 +75,17 @@ export const AddFleetRequest = async (req, res) => {
 export const UpdateFleetRequestDetails = async (req, res) => {
   const { id } = req.params;
 
-  const { project, date, location, comments, action, items, deleted } =
-    req.body;
+  const {
+    project,
+    date,
+    location,
+    comments,
+    action,
+    items,
+    deleted,
+    item_id: itemId,
+    ref_no: refNo,
+  } = req.body ?? {};
 
   if (!id) {
     return res.status(400).json({ error: "Fleet request id is required" });
@@ -99,6 +109,37 @@ export const UpdateFleetRequestDetails = async (req, res) => {
       return res.status(404).json({ error: "Fleet request not found" });
     if (!canAccessFleetProject(req.user, existingRequest.project))
       return denyProject(res);
+
+    if (
+      String(action ?? "")
+        .trim()
+        .toLowerCase() === "update-ref-no"
+    ) {
+      if (!getUserRoles(req.user).includes("inith")) {
+        return res.status(403).json({
+          error: "Only Hire users can edit reference numbers.",
+        });
+      }
+      if (
+        !Number.isInteger(Number(itemId)) ||
+        !Number.isFinite(Number(itemId)) ||
+        typeof refNo !== "string"
+      ) {
+        return res.status(400).json({
+          error: "A valid item_id and string ref_no are required.",
+        });
+      }
+
+      const updatedItem = await UpdateFleetRequestItemRefNo(
+        id,
+        Number(itemId),
+        refNo.trim(),
+      );
+      if (!updatedItem) {
+        return res.status(404).json({ error: "Fleet Request item not found" });
+      }
+      return res.status(200).json(updatedItem);
+    }
 
     const normalizedAction = String(action ?? "update")
       .trim()

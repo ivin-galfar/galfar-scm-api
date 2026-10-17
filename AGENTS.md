@@ -232,7 +232,7 @@ Do not allow clients to skip approval levels by supplying an arbitrary next stat
 | `GET /flreq/fetchdocid/:project` | Generate/fetch next document ID | Edit/manage and project access |
 | `GET /flreq/fetchdocsdata` | Paginated/filterable dashboard data | `module` required; projects required unless elevated role |
 | `GET /flreq/:id` | Fetch detail | Project access; draft/review hidden from approval-only users |
-| `PUT /flreq/:id` | Update or workflow action | Server authorizes action and computes next status |
+| `PUT /flreq/:id` | Update, workflow action, or item Ref No. edit | Server authorizes action; `update-ref-no` requires Hire role plus `fl_req` edit access and updates only the item's `ref_no` |
 
 ### Fleet Request permissions
 
@@ -345,7 +345,7 @@ The repository currently has no checked-in migration files despite having a `mig
 | `fn_ioc_categories` | File Note/IOC category reference data |
 | `document_id` | FN/IOC document-number tracking |
 | `fleet_request` | Fleet Request header, document ID, project, dates, status, and approver info |
-| `fleet_request_items` | Equipment line items linked to a Fleet Request |
+| `fleet_request_items` | Equipment line items linked to a Fleet Request, including the Hire-maintained `ref_no` |
 | `doc_id_fl_req` | Project-based Fleet Request document-number tracking |
 | `announcements` | Home-page announcement content |
 | `statement_email_trigger_log` | SLA/reminder email trigger history and audit information |
