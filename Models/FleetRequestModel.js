@@ -109,6 +109,7 @@ export const UpdateFleetRequest = async (
     approver_info,
     comments,
     items,
+    allocationUpdates,
     expectedStatus,
     deleted,
   },
@@ -255,9 +256,64 @@ export const UpdateFleetRequest = async (
       );
     }
 
+    if (allocationUpdates !== undefined) {
+      if (!Array.isArray(allocationUpdates) || allocationUpdates.length === 0) {
+        const error = new Error("allocation updates must be a non-empty array");
+        error.statusCode = 400;
+        throw error;
+      }
+      for (const allocation of allocationUpdates) {
+        const rawItemId = allocation.id ?? null;
+        const itemId = Number(rawItemId);
+        const itemNo = Number(allocation.item_no);
+        const allocationType = allocation.allocation_type ?? null;
+        if (
+          (!Number.isInteger(itemId) && !Number.isInteger(itemNo)) ||
+          typeof allocationType !== "string"
+        ) {
+          const error = new Error(
+            "Each allocation update requires an item identifier and allocation_type",
+          );
+          error.statusCode = 400;
+          throw error;
+        }
+        const useItemId = rawItemId !== undefined && Number.isInteger(itemId);
+
+        let allocationquery = `UPDATE fleet_request_items
+           SET allocation_type = $3
+           WHERE fleet_request_id = $1 AND ${useItemId ? "id = $2" : "item_no = $2"}
+           RETURNING *`;
+        let allocationvalues = [
+          id,
+          useItemId ? itemId : itemNo,
+          allocationType,
+        ];
+
+        const itemResult = await client.query(
+          allocationquery,
+          allocationvalues,
+        );
+        if (itemResult.rowCount === 0) {
+          const error = new Error(
+            "Fleet Request item not found for allocation update",
+          );
+          error.statusCode = 404;
+          throw error;
+        }
+      }
+    }
+
     await client.query("COMMIT");
 
-    return updatedItems ? { ...rows[0], items: updatedItems } : rows[0];
+    if (updatedItems || allocationUpdates !== undefined) {
+      const refreshedItems = await client.query(
+        "SELECT * FROM fleet_request_items WHERE fleet_request_id = $1 ORDER BY item_no ASC",
+        [id],
+      );
+
+      return { ...rows[0], items: updatedItems ?? refreshedItems.rows };
+    }
+    return rows[0];
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

@@ -91,11 +91,26 @@ export const UpdateFleetRequestDetails = async (req, res) => {
     return res.status(400).json({ error: "Fleet request id is required" });
   }
 
+  const allocationOnlyUpdate =
+    Array.isArray(items) &&
+    items.length > 0 &&
+    items.every(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        (item.id !== undefined || item.item_no !== undefined) &&
+        Object.keys(item).every((key) =>
+          ["id", "item_no", "allocation_type"].includes(key),
+        ) &&
+        (item.allocation_type !== undefined ||
+          item.allocationType !== undefined),
+    );
   if (
     items !== undefined &&
     (!Array.isArray(items) ||
       items.length === 0 ||
-      hasInvalidFitmentSelection(items))
+      (!allocationOnlyUpdate && hasInvalidFitmentSelection(items)))
   ) {
     return res.status(400).json({
       error:
@@ -157,6 +172,14 @@ export const UpdateFleetRequestDetails = async (req, res) => {
         .status(authorization.statusCode)
         .json({ error: authorization.error });
     }
+    if (
+      allocationOnlyUpdate &&
+      (normalizedAction !== "approve" || authorization.actorRole !== "hod")
+    ) {
+      return res.status(403).json({
+        error: "Only the assigned HOD approver can update allocation type.",
+      });
+    }
 
     const fleetRequest = await UpdateFleetRequest(id, {
       project,
@@ -172,7 +195,10 @@ export const UpdateFleetRequestDetails = async (req, res) => {
       role: authorization.actorRole,
       comments,
       items:
-        items === undefined ? undefined : normalizeFleetRequestItems(items),
+        items === undefined || allocationOnlyUpdate
+          ? undefined
+          : normalizeFleetRequestItems(items),
+      allocationUpdates: allocationOnlyUpdate ? items : undefined,
       expectedStatus: existingRequest.status,
       deleted,
     });
