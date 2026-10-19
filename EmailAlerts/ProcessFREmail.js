@@ -159,7 +159,7 @@ export const ProcessFREmail = async ({
         )),
       );
       ccemail.push(...(await getMultipleEmailsByRole(["hod"], dept_id)));
-      ccemail.push(...(await getMultipleEmailsByRole(["inith"], dept_id)));
+      ccemail.push(...(await getEmailsByRole("inith", dept_id, project)));
 
       const primaryRecipients = new Set(recipients);
       ccemail = [...new Set(ccemail)].filter(
