@@ -456,7 +456,7 @@ export const FetchFleetRequest = async (
     WHERE ${whereConditions.join(" AND ")}
   `;
 
-  query += " ORDER BY created_at DESC";
+  query += " ORDER BY id DESC";
 
   if (module === "frdashboard") {
     query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
