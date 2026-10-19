@@ -447,29 +447,35 @@ export const FetchFleetRequest = async (
     query += " WHERE " + whereConditions.join(" AND ");
   }
 
-  // Count the same filtered result set as the dashboard query, excluding only
-  // its pagination parameters.
-  const countValues = [...values];
-  const countQuery = `
-    SELECT COUNT(*)::int AS total_count
-    FROM fleet_request
-    WHERE ${whereConditions.join(" AND ")}
-  `;
-
   query += " ORDER BY id DESC";
 
-  if (module === "frdashboard") {
+  if (module === "fleetrequest") {
+    query += " LIMIT 20";
+  } else {
+    // Count the same filtered result set as the dashboard query, excluding only
+    // its pagination parameters.
+    const countValues = [...values];
+    const countQuery = `
+      SELECT COUNT(*)::int AS total_count
+      FROM fleet_request
+      WHERE ${whereConditions.join(" AND ")}
+    `;
+
     query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(normalizedLimit, normalizedPage * normalizedLimit);
+
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(query, values),
+      pool.query(countQuery, countValues),
+    ]);
+    return {
+      data: dataResult.rows,
+      totalCount: countResult.rows[0].total_count,
+    };
   }
 
-  const [dataResult, countResult] = await Promise.all([
-    pool.query(query, values),
-    pool.query(countQuery, countValues),
-  ]);
   return {
-    data: dataResult.rows,
-    totalCount: countResult.rows[0].total_count,
+    data: (await pool.query(query, values)).rows,
   };
 };
 
