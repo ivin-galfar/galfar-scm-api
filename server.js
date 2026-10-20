@@ -2,6 +2,7 @@ import express from "express";
 import "dotenv/config";
 import { notFound, errorHandler } from "./Middlewares/errormiddlewares.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import userRoutes from "./Routes/userRoutes.js";
 import ParticularRoutes from "./Routes/ParticularRoutes.js";
 import ReceiptRoutes from "./Routes/ReceiptRoutes.js";
@@ -23,7 +24,7 @@ const port = process.env.PORT;
 const app = express();
 
 app.use(express.json());
-
+app.use(cookieParser());
 const allowedOrigins = [process.env.PROD_URL, process.env.DEV_URL];
 
 const corsOptions = {

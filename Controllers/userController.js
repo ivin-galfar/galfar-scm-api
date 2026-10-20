@@ -51,13 +51,28 @@ export const authUser = async (req, res) => {
 
     const userWithPermissions = await getuserById(user.id);
     const token = generateToken(user.id);
-    res.json({
-      ...userWithPermissions,
-      token,
+    res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 20 * 24 * 60 * 60 * 1000,
     });
+
+    res.json(userWithPermissions);
   } catch (er) {
     res.status(500).json({ error: er.message });
   }
+};
+
+export const logoutUser = (req, res) => {
+  res.clearCookie("access_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+  return res.status(204).end();
 };
 export const updateisDocRead = async (req, res) => {
   const { email, click } = req.body;
