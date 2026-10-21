@@ -142,6 +142,13 @@ test("wrong step, access, comments, and project boundaries are enforced", () => 
   assert.equal(canAccessFleetProject(user("hod", "view", []), 7097), true);
 });
 
+test("inith, HOD, GM, and CEO can view requests across all projects", () => {
+  for (const role of ["inith", "hod", "gm", "ceo"]) {
+    assert.equal(canAccessFleetProject(user(role, "view", []), 7097), true);
+    assert.equal(canAccessFleetProject(user(role, "view", []), 7102), true);
+  }
+});
+
 test("a completed step cannot be approved again from its new status", () => {
   const cm = user("cm", "view", [7097]);
   const access = getStatementAccess(cm, "fl_req");

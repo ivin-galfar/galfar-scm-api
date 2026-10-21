@@ -112,6 +112,7 @@ export const UpdateFleetRequest = async (
     allocationUpdates,
     expectedStatus,
     deleted,
+    action_taken,
   },
 ) => {
   const client = await pool.connect();
@@ -133,6 +134,7 @@ export const UpdateFleetRequest = async (
     addValue("status", status);
     addValue("sentforapproval", sentforapproval);
     addValue("deleted", deleted);
+    addValue("action_taken", action_taken);
 
     let approvalData = approver_info;
     if (
@@ -353,7 +355,7 @@ export const FetchFleetRequest = async (
   const fieldsByModule = {
     fleetrequest: "id,doc_id,project",
     frdashboard:
-      "id,doc_id,location, created_at, project, status, approver_info",
+      "id,doc_id,location, created_at, project, status, approver_info, action_taken",
   };
 
   const fields = fieldsByModule[module];
