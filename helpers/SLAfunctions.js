@@ -2,10 +2,12 @@ import { ProcessBvrEmail } from "../EmailAlerts/ProcessBvrEmail.js";
 import { ProcessFnEmail } from "../EmailAlerts/ProcessFnEmail.js";
 import { ProcessHireEmail } from "../EmailAlerts/ProcessHireEmail.js";
 import { ProcessLogisticsEmail } from "../EmailAlerts/ProcessLogisticsEmail.js";
+import { ProcessFREmail } from "../EmailAlerts/ProcessFREmail.js";
 import {
   getStatementEmailTriggerSummary,
   insertStatementEmailTriggerLog,
 } from "../Models/SLAEmailTriggerLog.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 import { formattedDate } from "./helperfunctions.js";
 
 const shouldSendSLAEmail = ({ triggered_count, triggered_at }) => {
@@ -103,19 +105,50 @@ const buildHireAssetArgs = (statement, date_flag, triggerNumber) => ({
   triggerNumber,
 });
 
+const buildFleetRequestArgs = (statement, date_flag, triggerNumber) => ({
+  id: statement.id,
+  role: statement.approver_info?.at(-1)?.role ?? "",
+  project: statement.project,
+  doc_id: statement.doc_id,
+  created_at: statement.created_at,
+  location: statement.location,
+  status: statement.status,
+  SLA: true,
+  date_flag,
+  triggerNumber,
+});
+
 export const Processslafunctions = async (statements = [], statementType) => {
   if (!Array.isArray(statements)) return [];
 
   const results = [];
-
   for (const statement of statements) {
     const statement_id = statement.id || statement.cs_id;
     const statement_type = statement.type || statementType;
     const lastApprover = statement.approver_info?.at(-1);
-    const triggerSummary = await getStatementEmailTriggerSummary({
-      statement_id,
-      statement_type,
+    const nextRole = getEmailNextRole({
+      statementType,
+      documentType: statement.type,
+      role: lastApprover?.role,
+      status: statement.status,
+      category: statement.category,
+      project: statement.project ?? statement.project_code ?? "",
+      SLA: true,
     });
+
+    const triggerSummary = nextRole
+      ? await getStatementEmailTriggerSummary({
+          statement_id,
+          statement_type,
+          role: nextRole,
+          document_category:
+            statementType === "filenote"
+              ? statement.category
+              : statementType === "fr"
+                ? "Fleet Request"
+                : undefined,
+        })
+      : { triggered_count: 0, triggered_at: null };
 
     const SLAhours = shouldSendSLAEmail(triggerSummary);
     const last_approved_date =
@@ -153,6 +186,10 @@ export const Processslafunctions = async (statements = [], statementType) => {
         emailResult = await ProcessHireEmail(
           buildHireAssetArgs(statement, date_flag, triggerNumber),
         );
+      } else if (statementType === "fr") {
+        emailResult = await ProcessFREmail(
+          buildFleetRequestArgs(statement, date_flag, triggerNumber),
+        );
       } else {
         continue;
       }
@@ -175,15 +212,21 @@ export const Processslafunctions = async (statements = [], statementType) => {
       document_id: statement.id || statement.cs_id,
       document_type: statement.type || statementType || "N/A",
       document_category:
-        statementType === "filenote" ? statement.category : "N/A",
+        statementType === "filenote"
+          ? statement.category
+          : statementType === "fr"
+            ? "Fleet Request"
+            : "N/A",
       log_info: emailResult,
       last_approved: last_approved_date,
       dept:
-        statementType !== "filenote" &&
-        statementType !== "buyvsrent" &&
-        statementType !== "hiringasset"
-          ? "Logistics"
-          : "Plant",
+        statementType === "fr"
+          ? "Project"
+          : statementType !== "filenote" &&
+              statementType !== "buyvsrent" &&
+              statementType !== "hiringasset"
+            ? "Logistics"
+            : "Plant",
       SLAhours: SLAhours,
       role: emailResult?.reminding_role,
     });

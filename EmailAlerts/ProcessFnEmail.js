@@ -4,6 +4,7 @@ import {
   getEmailsByRole,
   getMultipleEmailsByRole,
 } from "../Models/userModel.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 export const ProcessFnEmail = async ({
   id,
@@ -24,57 +25,21 @@ export const ProcessFnEmail = async ({
   date_flag,
   triggerNumber,
 }) => {
-  const getPendingRole = (status) => {
-    if (!status || typeof status !== "string") return null;
-    const match = status?.match(/pending for\s+(.+)$/i);
-    if (!match) return null;
-    const pendingRole = match[1]?.trim().toLowerCase();
-    return pendingRole === "sfm" ? "fm" : pendingRole;
-  };
-
-  const filenotesubrole =
-    type === "file_note" && ["TFW", "General"].includes(category) ? "gm" : "fm";
-  const iocsubrole =
-    type === "ioc" &&
-    (category == "FWA" || category == "Demob") &&
-    project_code !== 1501
-      ? "pm"
-      : "gm";
-  const PD_PROJECTS = [7102, 7104, 7106];
-  const pmpdrole =
-    type === "ioc" &&
-    (category == "FWA" || category == "Demob") &&
-    project_code !== 1501 &&
-    PD_PROJECTS.includes(project_code)
-      ? "pd"
-      : "gm";
-  const isInsurance = category === "Insurance" ? "fm" : "gm";
-
-  const nextRoleMap =
-    type === "file_note"
-      ? { initfn: "hod", hod: filenotesubrole, fm: "gm", gm: "ceo" }
-      : {
-          initfn: "hod",
-          initpr: "cm",
-          initdc: "cm",
-          cm: iocsubrole,
-          pm: pmpdrole,
-          pd: "gm",
-          hod: isInsurance,
-          gm: "ceo",
-        };
-
-  const pendingRole = getPendingRole(status);
-  let nextRole = "";
+  const nextRole = getEmailNextRole({
+    statementType: "filenote",
+    documentType: type,
+    role,
+    status,
+    category,
+    project: project_code,
+    SLA,
+  });
   let ccemail = [];
   const isTerminalStatus = ["approved", "rejected", "review"]?.includes(
     status?.toLowerCase(),
   );
   let submitted_by = "";
 
-  if (SLA && pendingRole) {
-    nextRole = pendingRole;
-  }
   if (isTerminalStatus) {
     submitted_by = role ? role.toUpperCase() : "";
   } else if (category == "FWA" || category == "Demob") {
@@ -83,17 +48,6 @@ export const ProcessFnEmail = async ({
     // submitted_by = dept_id == 1 ? "P & E Dept." : dept_id;
     submitted_by = role == "initfn" ? "INITIATOR" : role.toUpperCase();
   }
-  if (!nextRole) {
-    nextRole =
-      status === "approved" || status === "rejected" || status === "review"
-        ? category != "Demob" && category != "FWA"
-          ? "initfn"
-          : category == "FWA"
-            ? "initdc"
-            : "initpr"
-        : nextRoleMap[role] || null;
-  }
-
   let recipients = [];
   let mailAttachments = [];
   if (!SLA) {

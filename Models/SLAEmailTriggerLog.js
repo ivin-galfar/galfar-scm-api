@@ -3,14 +3,23 @@ import pool from "../Config/db.js";
 export const getStatementEmailTriggerSummary = async ({
   statement_id,
   statement_type,
+  role,
+  document_category,
 }) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT triggered_count,triggered_at,role
+    const values = [statement_id, statement_type, role];
+    const categoryFilter = document_category
+      ? `AND document_category = $${values.push(document_category)}`
+      : "";
+
+    let query = `SELECT triggered_count,triggered_at,role
        FROM statement_email_trigger_log
-       WHERE document_id = $1 AND document_type = $2 AND email_sent = true`,
-      [statement_id, statement_type],
-    );
+       WHERE document_id = $1 AND document_type = $2 AND role = $3
+         AND email_sent = true ${categoryFilter}
+       ORDER BY triggered_at DESC
+       LIMIT 1`;
+
+    const { rows } = await pool.query(query, values);
 
     return rows[0] || { triggered_count: 0, triggered_at: null };
   } catch (error) {
@@ -36,9 +45,9 @@ export const insertStatementEmailTriggerLog = async ({
     // Check if a record for this document (id/type/category) already exists
     const { rows: existing } = await pool.query(
       `SELECT id FROM statement_email_trigger_log
-       WHERE document_id = $1 AND document_type = $2 AND document_category = $3
+       WHERE document_id = $1 AND document_type = $2 AND document_category = $3 AND role =$4
        LIMIT 1`,
-      [document_id, document_type, document_category],
+      [document_id, document_type, document_category, role],
     );
 
     if (existing.length) {

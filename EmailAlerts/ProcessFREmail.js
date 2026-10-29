@@ -4,7 +4,7 @@ import {
   getEmailsByRole,
   getMultipleEmailsByRole,
 } from "../Models/userModel.js";
-import { getFleetApprovalRoles } from "../Utils/fleetRequestAuthorization.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 const normalize = (value) =>
   String(value ?? "")
@@ -18,28 +18,6 @@ const getActorRole = (role) => {
     roles.map(normalize).find((item) => approvalRoles.includes(item)) ??
     "initiator"
   );
-};
-
-const getNextRole = ({ project, role, status }) => {
-  const normalizedStatus = normalize(status);
-  if (["approved", "rejected", "review"].includes(normalizedStatus)) {
-    return "initfr";
-  }
-
-  // The status produced by the Fleet Request workflow is authoritative.
-  const pendingMatch = normalizedStatus.match(/^pending for\s+(.+)$/);
-  if (pendingMatch) return pendingMatch[1].trim();
-
-  const flow = getFleetApprovalRoles(project);
-
-  const actorRole = getActorRole(role);
-
-  const currentIndex = flow.indexOf(actorRole);
-  return actorRole === "initiator"
-    ? flow[0]
-    : currentIndex >= 0
-      ? flow[currentIndex + 1] || null
-      : null;
 };
 
 const escapeHtml = (value) =>
@@ -117,6 +95,9 @@ export const ProcessFREmail = async ({
   location,
   status,
   exportedStatementAttachment,
+  SLA = false,
+  date_flag,
+  triggerNumber,
 }) => {
   const normalizedStatus = normalize(status);
 
@@ -124,7 +105,12 @@ export const ProcessFREmail = async ({
     throw new Error("id, project, doc_id and status are required.");
   }
 
-  const nextRole = getNextRole({ project, role, status: normalizedStatus });
+  const nextRole = getEmailNextRole({
+    statementType: "fr",
+    project,
+    role: getActorRole(role),
+    status: normalizedStatus,
+  });
 
   if (!nextRole) throw new Error("No next Fleet Request approver found.");
 
@@ -134,7 +120,7 @@ export const ProcessFREmail = async ({
   const sendInithIntimation = shouldSendInithIntimation({
     role,
     status: normalizedStatus,
-  });
+  }) && !SLA;
   try {
     recipients =
       nextRole === "initfr"
@@ -232,12 +218,22 @@ export const ProcessFREmail = async ({
       to: recipients,
       cc: ccemail,
       attachments: isApproved ? mailAttachments : [],
-      subject: `Fleet Request - ${statusLabel}: ${doc_id}`,
+      subject: SLA
+        ? `Reminder #${triggerNumber} - Approval Required | Fleet Request - ${doc_id}`
+        : `Fleet Request - ${statusLabel}: ${doc_id}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 10px 0; color: #333;">
           <p style="margin: 0 0 16px;">Dear User,</p>
           <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6;">
-            ${isApproved ? "The following Fleet Request has been approved." : isRejected ? "The following Fleet Request has been rejected." : isReview ? "The following Fleet Request has been submitted for review." : "The following Fleet Request has been submitted for approval."}
+            ${
+              isApproved
+                ? "The following Fleet Request has been approved."
+                : isRejected
+                  ? "The following Fleet Request has been rejected."
+                  : isReview
+                    ? "The following Fleet Request has been submitted for review."
+                    : `The following Fleet Request has been submitted for approval${SLA ? ` on ${escapeHtml(date_flag)}` : ""}.`
+            }
           </p>
           <div style="margin: 16px 0; padding: 18px; border-radius: 8px; font-size: 14px; line-height: 1.2;">
             <p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #1e293b;">Document Details</p>
@@ -273,6 +269,14 @@ export const ProcessFREmail = async ({
           </div>
         </div>
       `,
+      ...(SLA && {
+        priority: "high",
+        headers: {
+          "X-Priority": "1",
+          "X-MSMail-Priority": "High",
+          Importance: "high",
+        },
+      }),
     });
 
     let inithIntimationInfo = null;
