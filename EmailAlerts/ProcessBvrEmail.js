@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { getEmailsByRole } from "../Models/userModel.js";
 import { emaillogs } from "../Models/emailModel.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 export const ProcessBvrEmail = async ({
   id,
@@ -16,19 +17,11 @@ export const ProcessBvrEmail = async ({
   date_flag,
   triggerNumber,
 }) => {
-  const nextRoleMap = {
-    inita: "hod",
-    hod: "fm",
-    fm: "gm",
-    gm: "ceo",
-  };
-
-  let nextRole = "";
-  if (["approved", "rejected", "review"].includes(status)) {
-    nextRole = "inita";
-  } else {
-    nextRole = nextRoleMap[role];
-  }
+  const nextRole = getEmailNextRole({
+    statementType: "buyvsrent",
+    role,
+    status,
+  });
 
   let recipients = await getEmailsByRole(nextRole);
 

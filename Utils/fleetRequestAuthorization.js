@@ -64,7 +64,11 @@ export const isAssignedFleetApprover = (request, user) => {
 };
 
 export const canAccessFleetProject = (user, project) => {
-  if (["inith", "hod", "gm", "ceo"].some((role) => getUserRoles(user).includes(role))) {
+  if (
+    ["inith", "hod", "gm", "ceo"].some((role) =>
+      getUserRoles(user).includes(role),
+    )
+  ) {
     return true;
   }
   const projects = Array.isArray(user?.pr_code)

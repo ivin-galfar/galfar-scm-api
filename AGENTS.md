@@ -150,7 +150,7 @@ Document names only; never commit values:
 
 - `cron/emailCron.js` runs daily at 06:00 UTC, but sends monthly summaries only on day 1.
 - `cron/pendingSLACron.js` runs at 05:00 and 11:00 UTC, corresponding to 09:00 and 15:00 UAE time.
-- The SLA controller call is currently commented out; do not describe SLA email delivery as active without rechecking the code.
+- `pendingSLACron` invokes `SLAController` at 05:00 and 11:00 UTC for pending logistics, buy-vs-rent, file-note, hiring/asset, and Fleet Request records. Fleet Request reminders use the `Fleet Request` document category and `ProcessFREmail`.
 - Cron errors must not terminate normal API request handling. Avoid starting duplicate schedules in tests or multiple-process deployments without coordination.
 
 ## Implementation Conventions

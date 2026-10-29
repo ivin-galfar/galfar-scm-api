@@ -19,6 +19,10 @@ export const pendingSLACron = () => {
       }),
     );
 
-    SLAController(result);
+    try {
+      await SLAController(result);
+    } catch (error) {
+      console.error("SLA reminder processing failed:", error?.message || error);
+    }
   });
 };
