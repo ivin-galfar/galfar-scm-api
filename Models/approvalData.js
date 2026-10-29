@@ -148,7 +148,8 @@ export const approvalData = async ({
     const isDemob = roles.includes("initpr");
     const isHWA = roles.includes("initdc");
     const isInit = roles.every((r) => r.includes("initfn"));
-    const isInitfleet = roles.every((r) => r.includes("initfr"));
+    const isInitfleet = roles.every((r) => r.includes("initfr")); //only fleet request role
+    const isFleet = roles.includes("initfr");
     const isIncharge = roles.includes("incharge");
     const overallStatementsCountPromise = getOverallStatementsCount();
 
@@ -173,6 +174,7 @@ export const approvalData = async ({
         ((isPm || isPd) &&
           ["log_statements", "file_note", "fleet_request"].includes(source)) ||
         ((isDemob || isHWA) && source === "file_note") ||
+        (isFleet && source == "fleet_request") ||
         (isCm && ["file_note", "fleet_request"].includes(source)) ||
         (isInitfleet && source === "fleet_request");
       if (!isAllowedForRole) {
@@ -205,7 +207,7 @@ export const approvalData = async ({
           params.push("Demob");
         }
       } else if (
-        (isPm || isPd || isCm || isInitfleet) &&
+        (isPm || isPd || isCm || isInitfleet || isFleet) &&
         source === "fleet_request"
       ) {
         conditions.push("project::text = ANY($1::text[])");
