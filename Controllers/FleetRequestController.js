@@ -85,6 +85,7 @@ export const UpdateFleetRequestDetails = async (req, res) => {
     deleted,
     item_id: itemId,
     ref_no: refNo,
+    action_taken: actionTaken,
   } = req.body ?? {};
 
   if (!id) {
@@ -125,6 +126,32 @@ export const UpdateFleetRequestDetails = async (req, res) => {
     if (!canAccessFleetProject(req.user, existingRequest.project))
       return denyProject(res);
 
+    const normalizedAction = String(action ?? "update")
+      .trim()
+      .toLowerCase();
+    if (normalizedAction === "update-action-taken") {
+      if (!getUserRoles(req.user).includes("inith")) {
+        return res.status(403).json({
+          error: "Only Hire users can mark Action Taken.",
+        });
+      }
+      if (actionTaken === undefined || ![0, 1].includes(Number(actionTaken))) {
+        return res.status(400).json({
+          error: "A valid action_taken value of 0 or 1 is required.",
+        });
+      }
+      const updatedRequest = await UpdateFleetRequest(id, {
+        action_taken: Number(actionTaken),
+      });
+      return res.status(200).json(updatedRequest);
+    }
+
+    if (actionTaken !== undefined) {
+      return res.status(400).json({
+        error: "Use the Action Taken update action to change this value.",
+      });
+    }
+
     if (
       String(action ?? "")
         .trim()
@@ -156,9 +183,6 @@ export const UpdateFleetRequestDetails = async (req, res) => {
       return res.status(200).json(updatedItem);
     }
 
-    const normalizedAction = String(action ?? "update")
-      .trim()
-      .toLowerCase();
     const authorization = authorizeFleetRequestAction({
       request: existingRequest,
       user: req.user,
@@ -201,6 +225,7 @@ export const UpdateFleetRequestDetails = async (req, res) => {
       allocationUpdates: allocationOnlyUpdate ? items : undefined,
       expectedStatus: existingRequest.status,
       deleted,
+      action_taken: actionTaken,
     });
 
     if (!fleetRequest) {
