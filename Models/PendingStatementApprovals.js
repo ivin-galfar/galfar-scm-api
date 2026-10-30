@@ -37,8 +37,13 @@ export const fetchPendingApprovalsBySLA = async ({
   const pendingHireAssetFilter = `${baseFilter}${baseFilter ? " AND" : " WHERE"} r.status IS NOT NULL AND r.status LIKE 'Pending%'`;
 
   try {
-    const [logResult, buyRentResult, fileNoteResult, hireAssetResult] =
-      await Promise.all([
+    const [
+      logResult,
+      buyRentResult,
+      fileNoteResult,
+      hireAssetResult,
+      fleetRequestResult,
+    ] = await Promise.all([
         pool.query(
           `SELECT * FROM log_statements${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
         ),
@@ -59,7 +64,10 @@ export const fetchPendingApprovalsBySLA = async ({
             '[]'
           ) AS approver_info  FROM receipts r LEFT JOIN approverdetails a on r.id = a.cs_id  ${pendingHireAssetFilter} GROUP by r.id ORDER BY r.created_at DESC LIMIT 70 `,
         ),
-      ]);
+        pool.query(
+          `SELECT * FROM fleet_request${pendingFilter} ORDER BY created_at DESC LIMIT 70`,
+        ),
+    ]);
 
     const processRows = (rows) =>
       rows
@@ -89,6 +97,7 @@ export const fetchPendingApprovalsBySLA = async ({
       buyRentStatements: processRows(buyRentResult.rows),
       fileNotes: processRows(fileNoteResult.rows),
       hireAsset: processRows(hireAssetResult.rows),
+      fleetRequests: processRows(fleetRequestResult.rows),
     };
   } catch (error) {
     throw new Error(`fetchPendingApprovalsBySLA failed: ${error.message}`);

@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { getEmailsByRole } from "../Models/userModel.js";
 import { fetchoneReceiptFormData, sendemail } from "../Models/receiptmodel.js";
 import { mergedPdf } from "../helpers/helperfunctions.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 export const ProcessHireEmail = async ({
   projectvalue,
@@ -34,18 +35,12 @@ export const ProcessHireEmail = async ({
       ceo: 4,
     };
 
-    const nextRoleMap = {
-      inith: "hod",
-      inita: "hod",
-      hod: "gm",
-      gm: "ceo",
-    };
-    let nextRole = "";
-    if (["Approved", "review", "Rejected"].includes(status)) {
-      nextRole = type === "hiring" ? "inith" : "inita";
-    } else {
-      nextRole = nextRoleMap[role];
-    }
+    const nextRole = getEmailNextRole({
+      statementType: "hiringasset",
+      documentType: type,
+      role,
+      status,
+    });
 
     if (!nextRole) {
       throw new Error(`No next approver found for role: ${role}`);

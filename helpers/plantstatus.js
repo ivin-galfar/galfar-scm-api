@@ -1,3 +1,9 @@
+const getNormalProjects = () =>
+  (process.env.NORMAL_PROJECTS ?? "")
+    .split(",")
+    .map((project) => project.trim())
+    .filter(Boolean);
+
 export const expectedStatuses = (currentrole) => {
   let statustext = "";
   if (currentrole == "inita") {
@@ -24,6 +30,9 @@ export const statusExpected = (
 ) => {
   let statustext = "";
   const roles = currentrole.map((r) => r.toLowerCase());
+  const normalProjects = getNormalProjects();
+  const isNormalProject = normalProjects.includes(String(project_code).trim());
+
   if (
     !roles.includes("cm") &&
     !roles.includes("pm") &&
@@ -69,13 +78,9 @@ export const statusExpected = (
     (category == "Demob" || category == "FWA")
   ) {
     statustext = "pending for cm";
-  } else if (roles.includes("cm") && project_code != 1501) {
+  } else if (roles.includes("cm") && !isNormalProject) {
     statustext = "pending for pm";
-  } else if (
-    roles.includes("cm") &&
-    category == "FWA" &&
-    project_code == 1501
-  ) {
+  } else if (roles.includes("cm") && category == "FWA" && isNormalProject) {
     statustext = "pending for gm";
   } else if (roles.includes("pm") && SpecialProjects) {
     statustext = "pending for pd";

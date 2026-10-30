@@ -6,6 +6,7 @@ export const SLAController = async (result) => {
     buyRentStatements = [],
     fileNotes = [],
     hireAsset = [],
+    fleetRequests = [],
   } = result;
 
   await Promise.allSettled([
@@ -13,5 +14,6 @@ export const SLAController = async (result) => {
     Processslafunctions(buyRentStatements, "buyvsrent"),
     Processslafunctions(fileNotes, "filenote"),
     Processslafunctions(hireAsset, "hiringasset"),
+    Processslafunctions(fleetRequests, "fr"),
   ]);
 };

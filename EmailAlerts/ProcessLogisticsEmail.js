@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { getEmailsByProject, getEmailsByRole } from "../Models/userModel.js";
 import { PmCmNames } from "../Models/projectModel.js";
 import { emaillogslg } from "../Models/emailModel.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 export const ProcessLogisticsEmail = async ({
   status,
@@ -56,24 +57,12 @@ export const ProcessLogisticsEmail = async ({
     ceo: 5,
   };
 
-  const PD_PROJECTS = [7102, 7104, 7106];
-  const isPdProject = PD_PROJECTS.includes(project);
-
-  const nextRoleMap = {
-    initlg: "incharge",
-    incharge: "pm",
-    pm: isPdProject ? "pd" : "gm",
-    pd: "gm",
-    gm: "fm",
-    fm: "ceo",
-  };
-
-  let nextRole = "";
-  if (["approved", "rejected", "review"].includes(status)) {
-    nextRole = "initlg";
-  } else {
-    nextRole = nextRoleMap[role];
-  }
+  const nextRole = getEmailNextRole({
+    statementType: "logistics",
+    role,
+    status,
+    project: project_code,
+  });
 
   if (!nextRole) {
     throw new Error(`No next approver found for role: ${role}`);
@@ -252,6 +241,8 @@ export const ProcessLogisticsEmail = async ({
       reminding_role: nextRole,
     };
   } catch (error) {
+    console.log(error);
+
     throw new Error(error?.message || "Failed to send logistics email.");
   }
 };

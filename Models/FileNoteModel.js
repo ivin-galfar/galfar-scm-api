@@ -512,9 +512,12 @@ export const updatefilenote = async (
 ) => {
   const file = attachments?.map((a) => a.url);
   const file_name = attachments?.map((a) => a.name);
-  const SpecialProjects = process.env.SPECIAL_PROJECTS.includes(
-    Number(project_code),
-  );
+  const SpecialProjects = process.env.SPECIAL_PROJECTS.split(",")
+    .map((project) => project.trim())
+    .filter(Boolean)
+    .map(Number)
+    .includes(project_code);
+
   try {
     const shouldUpdateWef =
       (wefchanged === true || wefchanged === "true") &&
