@@ -8,6 +8,7 @@ import {
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import generateToken from "../Utils/generateToken.js";
+import authCookieOptions from "../Utils/authCookieOptions.js";
 export const createUser = async (req, res) => {
   const { email, password, isAdmin, role, deptcode, pr_code, is_valid } =
     req.body;
@@ -51,23 +52,32 @@ export const authUser = async (req, res) => {
 
     const userWithPermissions = await getuserById(user.id);
     const token = generateToken(user.id);
-    res.json({
-      ...userWithPermissions,
-      token,
+    res.cookie("access_token", token, {
+      ...authCookieOptions,
+      maxAge: 20 * 24 * 60 * 60 * 1000,
     });
+
+    res.json(userWithPermissions);
   } catch (er) {
     res.status(500).json({ error: er.message });
   }
 };
-export const updateisDocRead = async (req, res) => {
-  const { email, click } = req.body;
 
+export const logoutUser = (req, res) => {
+  res.clearCookie("access_token", authCookieOptions);
+  return res.status(204).end();
+};
+export const updateisDocRead = async (req, res) => {
   try {
-    const updated = await updateDocRead(click, email);
+    const updated = await updateDocRead(req.user.email);
+
+    if (!updated[0]) {
+      return res.status(404).json({ error: "User not found." });
+    }
 
     return res.status(200).json(updated[0].isdoc_read);
   } catch (error) {
-    res.status(500).json({ error: er.message });
+    res.status(500).json({ error: error.message });
   }
 };
 

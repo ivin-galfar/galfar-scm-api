@@ -74,7 +74,7 @@ export const getuserById = async (userId) => {
   try {
     const { rows } = await pool.query(
       `SELECT
-        to_jsonb(u) - ARRAY['password', 'reset_token', 'reset_token_expires', 'password_reset_token', 'password_reset_expires']::text[] AS account,
+        to_jsonb(u) - ARRAY['password', 'reset_token','created_at','isdoc_read','password_updated', 'reset_token_expires', 'password_reset_token', 'password_reset_expires']::text[] AS account,
         COALESCE((
           SELECT jsonb_agg(jsonb_build_object(
             'statement_role', srp.statement_role,
@@ -241,7 +241,7 @@ export const getEmailsByProject = async (project, nextRole) => {
     throw error;
   }
 };
-export const updateDocRead = async (click, email) => {
+export const updateDocRead = async (email) => {
   try {
     const query = `
       UPDATE users 

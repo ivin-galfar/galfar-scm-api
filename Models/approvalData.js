@@ -2,6 +2,7 @@ import pool from "../Config/db.js";
 import { initiatorRoles } from "../helpers/helperfunctions.js";
 import { getLatestApprovalEntry } from "../helpers/SLAfunctions.js";
 import { getStatementEmailTriggerSummary } from "./SLAEmailTriggerLog.js";
+import { getEmailNextRole } from "../Utils/emailNextRole.js";
 
 const sourceQueries = [
   [
@@ -400,11 +401,34 @@ export const approvalData = async ({
           statementType = record.data.type;
         } else if (record.source === "buy_rent_statements") {
           statementType = "buyvsrent";
+        } else if (record.source === "fleet_request") {
+          statementType = "fr";
         }
+
+        const latestApproval = Array.isArray(record.data.approver_info)
+          ? record.data.approver_info.at(-1)
+          : null;
+        const nextRole = getEmailNextRole({
+          statementType:
+            record.source === "receipts" ? "hiringasset" : statementType,
+          documentType: record.data.type,
+          role: latestApproval?.role,
+          status: record.data.status,
+          category: record.data.category,
+          project: record.data.project ?? record.data.project_code ?? "",
+          SLA: true,
+        });
 
         const triggerSummary = await getStatementEmailTriggerSummary({
           statement_id: record.data.id,
           statement_type: statementType,
+          role: nextRole,
+          document_category:
+            record.source === "file_note"
+              ? record.data.category
+              : record.source === "fleet_request"
+                ? "Fleet Request"
+                : undefined,
         });
 
         return triggerSummary;
