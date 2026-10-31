@@ -241,7 +241,7 @@ export const getEmailsByProject = async (project, nextRole) => {
     throw error;
   }
 };
-export const updateDocRead = async (click, email) => {
+export const updateDocRead = async (email) => {
   try {
     const query = `
       UPDATE users 

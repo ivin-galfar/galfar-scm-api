@@ -1,16 +1,12 @@
 import jwt from "jsonwebtoken";
 import { getuserById } from "../Models/userModel.js";
+import authCookieOptions from "./authCookieOptions.js";
 
 function verifyToken(req, res, next) {
   const token = req.cookies?.access_token;
 
   const clearAuthCookie = () =>
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    res.clearCookie("access_token", authCookieOptions);
 
   if (!token) {
     clearAuthCookie();
